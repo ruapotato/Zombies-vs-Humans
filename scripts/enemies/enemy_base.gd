@@ -60,9 +60,15 @@ const ANIM_DEATH := "m death_metarig"
 
 func _ready() -> void:
 	# Find AnimationPlayer in model
-	_find_animation_player(model)
-	if anim_player:
-		_play_animation(ANIM_IDLE)
+	if model:
+		_find_animation_player(model)
+		if anim_player:
+			print("Enemy: Found AnimationPlayer with ", anim_player.get_animation_list().size(), " animations")
+			for anim_name in anim_player.get_animation_list():
+				print("  - ", anim_name)
+			_play_animation(ANIM_IDLE)
+		else:
+			push_warning("Enemy: No AnimationPlayer found in model!")
 	# Only server controls enemies
 	if not multiplayer.is_server():
 		set_physics_process(false)
