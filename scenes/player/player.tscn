@@ -1,0 +1,75 @@
+[gd_scene load_steps=6 format=3 uid="uid://b6xnr3h7k2f8d"]
+
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="2_camera"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_player"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player"]
+albedo_color = Color(0.2, 0.6, 0.9, 1)
+
+[node name="Player" type="CharacterBody3D" groups=["players"]]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_player")
+surface_material_override/0 = SubResource("StandardMaterial3D_player")
+
+[node name="CameraMount" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraMount"]
+script = ExtResource("2_camera")
+
+[node name="WeaponHolder" type="Node3D" parent="CameraMount/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, -0.2, -0.5)
+
+[node name="RayCast3D" type="RayCast3D" parent="CameraMount/Camera3D"]
+target_position = Vector3(0, 0, -100)
+collision_mask = 13
+
+[node name="InteractionRay" type="RayCast3D" parent="CameraMount/Camera3D"]
+target_position = Vector3(0, 0, -3)
+collision_mask = 16
+
+[node name="HitboxArea" type="Area3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="HitboxShape" type="CollisionShape3D" parent="HitboxArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="HeadHitbox" type="Area3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="AudioListener3D" type="AudioListener3D" parent="CameraMount/Camera3D"]
+
+[node name="SyncTimer" type="Timer" parent="."]
+wait_time = 0.05
+autostart = true
+
+[node name="FootstepTimer" type="Timer" parent="."]
+wait_time = 0.4
+one_shot = true
+
+[connection signal="timeout" from="SyncTimer" to="." method="_on_sync_timer_timeout"]
+[connection signal="timeout" from="FootstepTimer" to="." method="_on_footstep_timer_timeout"]
