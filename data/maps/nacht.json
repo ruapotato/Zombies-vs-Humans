@@ -1,0 +1,41 @@
+{
+	"name": "nacht",
+	"display_name": "Nacht der Untoten",
+	"description": "The original zombie survival experience. A small bunker with limited resources.",
+	"author": "Zombies vs Humans Team",
+	"max_players": 4,
+	"difficulty": 2,
+	"spawn_points": [
+		{"x": 0, "y": 1, "z": 0},
+		{"x": 2, "y": 1, "z": 0},
+		{"x": -2, "y": 1, "z": 0},
+		{"x": 0, "y": 1, "z": 2}
+	],
+	"zombie_spawn_points": [
+		{"x": -12, "y": 0, "z": -12},
+		{"x": 12, "y": 0, "z": -12},
+		{"x": -12, "y": 0, "z": 12},
+		{"x": 12, "y": 0, "z": 12},
+		{"x": 0, "y": 0, "z": -12},
+		{"x": 0, "y": 0, "z": 12}
+	],
+	"perk_machine_locations": {
+		"juggernog": {"x": 10, "y": 0, "z": 10},
+		"speed_cola": {"x": -10, "y": 0, "z": -10}
+	},
+	"mystery_box_locations": [
+		{"x": 10, "y": 0, "z": -10},
+		{"x": -10, "y": 0, "z": 10}
+	],
+	"pack_a_punch_location": {"x": 0, "y": 0, "z": -8},
+	"power_switch_location": {"x": -10, "y": 1, "z": 10},
+	"wall_weapons": [
+		{"weapon_id": "m14", "position": {"x": -14.5, "y": 1.5, "z": 5}, "rotation": 0},
+		{"weapon_id": "olympia", "position": {"x": 5, "y": 1.5, "z": -14.5}, "rotation": 90}
+	],
+	"doors": [],
+	"barriers": [],
+	"nav_mesh_path": "",
+	"ambient_sound": "ambient_bunker",
+	"preview_image": "res://assets/maps/nacht_preview.png"
+}
