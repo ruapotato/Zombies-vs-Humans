@@ -1,12 +1,20 @@
-[gd_scene load_steps=5 format=3 uid="uid://b6xnr3h7k2f8d"]
+[gd_scene load_steps=7 format=3 uid="uid://b6xnr3h7k2f8d"]
 
-[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_player"]
-[ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="2_camera"]
-[ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="3_model"]
+[ext_resource type="Script" uid="uid://dfaj5cc4qbdvp" path="res://scripts/player/player_controller.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://c0duympqnr8uf" path="res://scripts/player/player_camera.gd" id="2_camera"]
+[ext_resource type="PackedScene" uid="uid://ys7jnr873kig" path="res://assets/models/enemies/zombie_girl.glb" id="3_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
-radius = 0.4
+radius = 0.235
 height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_gmlin"]
+radius = 0.235
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lvxji"]
+radius = 0.235
+height = 0.49
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 collision_layer = 2
@@ -14,11 +22,11 @@ collision_mask = 5
 script = ExtResource("1_player")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.26006323)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="Model" parent="." instance=ExtResource("3_model")]
-transform = Transform3D(-1.5, 0, 0, 0, 1.5, 0, 0, 0, -1.5, 0, 0, 0)
+transform = Transform3D(-1.145, 0, -1.0009908e-07, 0, 1.145, 0, 1.0009908e-07, 0, -1.145, 0, 0, 0.259754)
 
 [node name="CameraMount" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
@@ -37,23 +45,25 @@ collision_mask = 13
 target_position = Vector3(0, 0, -3)
 collision_mask = 16
 
+[node name="AudioListener3D" type="AudioListener3D" parent="CameraMount/Camera3D"]
+
 [node name="HitboxArea" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.29203862)
 collision_layer = 2
 collision_mask = 0
 
 [node name="HitboxShape" type="CollisionShape3D" parent="HitboxArea"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("CapsuleShape3D_player")
+shape = SubResource("CapsuleShape3D_gmlin")
 
 [node name="HeadHitbox" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.29203862)
 collision_layer = 2
 collision_mask = 0
 
 [node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
-shape = SubResource("CapsuleShape3D_player")
-
-[node name="AudioListener3D" type="AudioListener3D" parent="CameraMount/Camera3D"]
+shape = SubResource("CapsuleShape3D_lvxji")
 
 [node name="SyncTimer" type="Timer" parent="."]
 wait_time = 0.05

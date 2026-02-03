@@ -49,7 +49,8 @@ func _process(_delta: float) -> void:
 func interact(player: Node) -> bool:
 	match box_state:
 		BoxState.IDLE:
-			return _start_cycle(player)
+			_start_cycle(player)  # Coroutine, don't await
+			return true
 
 		BoxState.READY:
 			if waiting_player == player:
@@ -242,7 +243,7 @@ func get_prompt(player: Node) -> String:
 		BoxState.READY:
 			if waiting_player == player:
 				var data := WeaponRegistry.get_weapon_data(current_weapon_id)
-				var weapon_name := data.display_name if data else current_weapon_id
+				var weapon_name: String = data.display_name if data else current_weapon_id
 				return "Take %s" % weapon_name
 			else:
 				return ""

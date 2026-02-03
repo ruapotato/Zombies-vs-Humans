@@ -52,7 +52,7 @@ func _start_upgrade(player: Node) -> bool:
 		AudioManager.play_sound_ui("denied")
 		return false
 
-	var current_weapon := player.get_current_weapon()
+	var current_weapon: Node = player.get_current_weapon()
 	if not current_weapon:
 		return false
 
@@ -145,7 +145,7 @@ func get_prompt(player: Node) -> String:
 
 	match pap_state:
 		PaPState.IDLE:
-			var current_weapon := player.get_current_weapon()
+			var current_weapon: Node = player.get_current_weapon()
 			if not current_weapon:
 				return "No weapon equipped"
 
@@ -162,7 +162,7 @@ func get_prompt(player: Node) -> String:
 
 		PaPState.READY:
 			if waiting_player == player:
-				var weapon_name := upgrading_weapon.display_name if upgrading_weapon else "weapon"
+				var weapon_name: String = upgrading_weapon.display_name if upgrading_weapon else "weapon"
 				return "Take %s" % weapon_name
 			else:
 				return ""
