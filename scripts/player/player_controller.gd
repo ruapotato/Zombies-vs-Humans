@@ -65,32 +65,57 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 @onready var weapon_holder: Node3D = $CameraMount/Camera3D/WeaponHolder
 @onready var aim_ray: RayCast3D = $CameraMount/Camera3D/RayCast3D
 @onready var interaction_ray: RayCast3D = $CameraMount/Camera3D/InteractionRay
-@onready var mesh: MeshInstance3D = $MeshInstance3D
+@onready var model: Node3D = $Model
 @onready var footstep_timer: Timer = $FootstepTimer
+
+# Animation
+var anim_player: AnimationPlayer = null
+var current_anim: String = ""
+const ANIM_IDLE := "m root"
+const ANIM_RUN := "m run"
+const ANIM_JUMP := "m jump"
 
 
 func _ready() -> void:
 	print("=== PLAYER _ready() called, authority: ", is_multiplayer_authority(), " ===")
 
+	# Find AnimationPlayer in model
+	if model:
+		_find_animation_player(model)
+		if anim_player:
+			_play_animation(ANIM_IDLE)
+
 	# Set up based on authority
 	if is_multiplayer_authority():
 		camera.current = true
 		$CameraMount/Camera3D/AudioListener3D.make_current()
-		mesh.visible = false  # Hide own mesh in first person
+		model.visible = false  # Hide own model in first person
 	else:
 		camera.current = false
 		set_physics_process(false)
 
-	# Apply player color to mesh
-	var material: Material = mesh.get_surface_override_material(0)
-	if material:
-		var new_mat: StandardMaterial3D = material.duplicate() as StandardMaterial3D
-		if new_mat:
-			new_mat.albedo_color = player_color
-			mesh.set_surface_override_material(0, new_mat)
-
 	# Give starting weapon
 	_give_starting_weapon()
+
+
+func _find_animation_player(node: Node) -> void:
+	if node is AnimationPlayer:
+		anim_player = node as AnimationPlayer
+		return
+	for child in node.get_children():
+		_find_animation_player(child)
+		if anim_player:
+			return
+
+
+func _play_animation(anim_name: String, speed: float = 1.0) -> void:
+	if not anim_player:
+		return
+	if current_anim == anim_name and anim_player.is_playing():
+		return
+	if anim_player.has_animation(anim_name):
+		current_anim = anim_name
+		anim_player.play(anim_name, -1, speed)
 
 
 func _physics_process(delta: float) -> void:
@@ -157,7 +182,15 @@ func _handle_movement_input(delta: float) -> void:
 	# Jumping
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
+		_play_animation(ANIM_JUMP, 1.5)
 		AudioManager.play_sound_3d("jump", global_position, -5.0)
+
+	# Update animation based on movement
+	if is_on_floor():
+		if velocity.length() > 0.5:
+			_play_animation(ANIM_RUN, 1.0 if not is_sprinting else 1.5)
+		else:
+			_play_animation(ANIM_IDLE)
 
 
 func _handle_weapon_input() -> void:

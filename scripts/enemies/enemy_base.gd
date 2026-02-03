@@ -56,6 +56,7 @@ var current_anim: String = ""
 const ANIM_IDLE := "m root"
 const ANIM_RUN := "m run"
 const ANIM_DEATH := "m death"
+const ANIM_ATTACK := "m jump"  # Using jump as attack/swipe motion
 
 
 func _ready() -> void:
@@ -136,7 +137,6 @@ func _physics_process(delta: float) -> void:
 			_chase_target(delta)
 
 		EnemyState.ATTACKING:
-			_play_animation(ANIM_RUN, 0.5)
 			_attack_target(delta)
 
 		EnemyState.DYING:
@@ -219,6 +219,9 @@ func _perform_attack() -> void:
 	can_attack = false
 	attack_timer.wait_time = attack_rate
 	attack_timer.start()
+
+	# Play attack animation
+	_play_animation(ANIM_ATTACK, 2.0)  # Fast swipe
 
 	# Find valid target in range
 	var attack_target: Node3D = null
