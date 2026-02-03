@@ -1,6 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://tyrant_enemy_scene"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.8
@@ -8,18 +9,6 @@ height = 3.2
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
 radius = 0.6
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.8
-height = 3.2
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tyrant"]
-albedo_color = Color(0.4, 0.1, 0.1, 1)
-roughness = 0.4
-metallic = 0.5
-emission_enabled = true
-emission = Color(0.5, 0.1, 0.0, 1)
-emission_energy_multiplier = 1.0
 
 [node name="Tyrant" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
@@ -30,10 +19,8 @@ script = ExtResource("1_enemy")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CapsuleShape3D_body")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
-mesh = SubResource("CapsuleMesh_body")
-surface_material_override/0 = SubResource("StandardMaterial3D_tyrant")
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.8

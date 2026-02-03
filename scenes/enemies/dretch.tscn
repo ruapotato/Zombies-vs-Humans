@@ -1,6 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://dretch_enemy_scene"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.3
@@ -8,14 +9,6 @@ height = 0.8
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
 radius = 0.25
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.3
-height = 0.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dretch"]
-albedo_color = Color(0.2, 0.5, 0.1, 1)
-roughness = 0.8
 
 [node name="Dretch" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
@@ -26,10 +19,8 @@ script = ExtResource("1_enemy")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 shape = SubResource("CapsuleShape3D_body")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
-mesh = SubResource("CapsuleMesh_body")
-surface_material_override/0 = SubResource("StandardMaterial3D_dretch")
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
