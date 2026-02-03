@@ -44,12 +44,25 @@ var is_pouncing: bool = false
 
 # Components
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var mesh: MeshInstance3D = $MeshInstance3D
+@onready var model: Node3D = $Model
 @onready var attack_timer: Timer = $AttackTimer
 @onready var path_update_timer: Timer = $PathUpdateTimer
 
+# Animation
+var anim_player: AnimationPlayer = null
+var current_anim: String = ""
+
+# Animation names from the model
+const ANIM_IDLE := "m root_metarig"
+const ANIM_RUN := "m run_metarig"
+const ANIM_DEATH := "m death_metarig"
+
 
 func _ready() -> void:
+	# Find AnimationPlayer in model
+	_find_animation_player(model)
+	if anim_player:
+		_play_animation(ANIM_IDLE)
 	# Only server controls enemies
 	if not multiplayer.is_server():
 		set_physics_process(false)
@@ -65,6 +78,26 @@ func _ready() -> void:
 
 	# Set meta for point value
 	set_meta("point_value", point_value)
+
+
+func _find_animation_player(node: Node) -> void:
+	if node is AnimationPlayer:
+		anim_player = node as AnimationPlayer
+		return
+	for child in node.get_children():
+		_find_animation_player(child)
+		if anim_player:
+			return
+
+
+func _play_animation(anim_name: String, speed: float = 1.0) -> void:
+	if not anim_player:
+		return
+	if current_anim == anim_name and anim_player.is_playing():
+		return
+	if anim_player.has_animation(anim_name):
+		current_anim = anim_name
+		anim_player.play(anim_name, -1, speed)
 
 
 func _scale_stats_for_round() -> void:
@@ -86,19 +119,22 @@ func _physics_process(delta: float) -> void:
 
 	match state:
 		EnemyState.SPAWNING:
-			pass
+			_play_animation(ANIM_IDLE)
 
 		EnemyState.IDLE:
+			_play_animation(ANIM_IDLE)
 			_find_target()
 
 		EnemyState.CHASING:
+			_play_animation(ANIM_RUN, 1.5)
 			_chase_target(delta)
 
 		EnemyState.ATTACKING:
+			_play_animation(ANIM_RUN, 0.5)
 			_attack_target(delta)
 
 		EnemyState.DYING:
-			pass
+			pass  # Death animation handled in die()
 
 		EnemyState.DEAD:
 			pass
@@ -255,10 +291,16 @@ func die() -> void:
 
 	died.emit(self, last_attacker_id, last_hit_was_headshot)
 
-	# Death animation/effect
-	var tween := create_tween()
-	tween.tween_property(mesh, "scale", Vector3(1, 0.1, 1), 0.3)
-	tween.tween_callback(_finish_death)
+	# Play death animation if available
+	if anim_player and anim_player.has_animation(ANIM_DEATH):
+		_play_animation(ANIM_DEATH)
+		await anim_player.animation_finished
+		_finish_death()
+	else:
+		# Fallback: simple scale tween
+		var tween := create_tween()
+		tween.tween_property(model, "scale", Vector3(1, 0.1, 1), 0.3)
+		tween.tween_callback(_finish_death)
 
 
 func _finish_death() -> void:
