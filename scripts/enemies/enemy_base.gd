@@ -56,7 +56,7 @@ var current_anim: String = ""
 const ANIM_IDLE := "m root"
 const ANIM_RUN := "m run"
 const ANIM_DEATH := "m death"
-const ANIM_ATTACK := "m jump"  # Using jump as attack/swipe motion
+const ANIM_ATTACK := "swipe"  # Proper attack animation
 
 
 func _ready() -> void:
