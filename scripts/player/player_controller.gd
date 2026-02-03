@@ -62,7 +62,7 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 # Components
 @onready var camera_mount: Node3D = $CameraMount
 @onready var camera: Camera3D = $CameraMount/Camera3D
-@onready var weapon_holder: Node3D = $CameraMount/Camera3D/WeaponHolder
+@onready var weapon_holder: Node3D = $Model/metarig/Skeleton3D/gun_mount
 @onready var aim_ray: RayCast3D = $CameraMount/Camera3D/RayCast3D
 @onready var interaction_ray: RayCast3D = $CameraMount/Camera3D/InteractionRay
 @onready var model: Node3D = $Model
@@ -70,21 +70,14 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 
 # Animation
 var anim_player: AnimationPlayer = null
+var anim_tree: AnimationTree = null
 var skeleton: Skeleton3D = null
-var current_anim: String = ""
 var is_moving: bool = false
-
-# Arm bone poses from gun_hold_arms (captured at runtime)
-var arm_bone_poses: Dictionary = {}  # bone_index -> Transform3D
-var arm_bone_indices: Array[int] = []
 
 const ANIM_IDLE := "m root"  # Lower body idle
 const ANIM_RUN := "m run"  # Lower body run
 const ANIM_JUMP := "m jump"
 const ANIM_GUN_HOLD := "gun_hold_arms"  # Upper body arms
-
-# Bones to override with gun pose (arms, hands, fingers)
-const ARM_BONE_KEYWORDS := ["shoulder", "arm", "hand", "finger", "thumb", "index", "middle", "ring", "pinky"]
 
 
 func _ready() -> void:
@@ -94,8 +87,8 @@ func _ready() -> void:
 	if model:
 		_find_animation_player(model)
 		_find_skeleton(model)
-		if anim_player and skeleton:
-			_setup_arm_override()
+		if anim_player:
+			_setup_animation_tree()
 
 	# Set up based on authority
 	if is_multiplayer_authority():
@@ -129,6 +122,14 @@ func _find_animation_player(node: Node) -> void:
 func _find_skeleton(node: Node) -> void:
 	if node is Skeleton3D:
 		skeleton = node as Skeleton3D
+		# Print all bone names to help find hand bone
+		print("=== Skeleton bones ===")
+		for i in range(skeleton.get_bone_count()):
+			var name: String = skeleton.get_bone_name(i)
+			if "hand" in name.to_lower():
+				print("  [", i, "] ", name, " <-- HAND")
+			elif "arm" in name.to_lower():
+				print("  [", i, "] ", name, " <-- ARM")
 		return
 	for child in node.get_children():
 		_find_skeleton(child)
@@ -136,92 +137,95 @@ func _find_skeleton(node: Node) -> void:
 			return
 
 
-func _setup_arm_override() -> void:
+func _setup_animation_tree() -> void:
 	# Ensure animations loop
-	_set_animation_loop(ANIM_IDLE)
-	_set_animation_loop(ANIM_RUN)
-	_set_animation_loop(ANIM_GUN_HOLD)
+	for anim_name: String in [ANIM_IDLE, ANIM_RUN, ANIM_GUN_HOLD]:
+		if anim_player.has_animation(anim_name):
+			var anim: Animation = anim_player.get_animation(anim_name)
+			anim.loop_mode = Animation.LOOP_LINEAR
 
-	# Find arm bone indices
-	var bone_count: int = skeleton.get_bone_count()
-	print("Setting up arm override, skeleton has ", bone_count, " bones")
+	# Create AnimationTree
+	anim_tree = AnimationTree.new()
+	anim_tree.name = "AnimationTree"
+	model.add_child(anim_tree)
 
-	for i: int in range(bone_count):
-		var bone_name: String = skeleton.get_bone_name(i).to_lower()
-		for keyword: String in ARM_BONE_KEYWORDS:
-			if keyword in bone_name:
-				arm_bone_indices.append(i)
-				print("  Arm bone [", i, "]: ", skeleton.get_bone_name(i))
-				break
+	# Set the animation player - use path relative to AnimationTree
+	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
 
-	# Capture arm poses from gun_hold_arms animation (async)
-	await _capture_arm_poses()
+	# Create blend tree
+	var blend_tree := AnimationNodeBlendTree.new()
+	anim_tree.tree_root = blend_tree
 
-	# Start with idle animation
-	_play_animation(ANIM_IDLE)
+	# Lower body animation (will play run/idle)
+	var lower_anim := AnimationNodeAnimation.new()
+	lower_anim.animation = ANIM_IDLE
+	blend_tree.add_node("Lower", lower_anim, Vector2(0, 0))
+
+	# Upper body animation (gun hold)
+	var upper_anim := AnimationNodeAnimation.new()
+	upper_anim.animation = ANIM_GUN_HOLD
+	blend_tree.add_node("Upper", upper_anim, Vector2(0, 150))
+
+	# Blend2 node with filter to override only arm bones
+	var blend_node := AnimationNodeBlend2.new()
+	blend_node.filter_enabled = true
+	blend_tree.add_node("Blend", blend_node, Vector2(250, 75))
+
+	# Set up filter - only arm/hand bones, not legs
+	var arm_keywords := ["shoulder", "arm", "hand", "finger", "thumb", "index", "middle", "ring", "pinky", "wrist"]
+	if anim_player.has_animation(ANIM_GUN_HOLD):
+		var gun_anim: Animation = anim_player.get_animation(ANIM_GUN_HOLD)
+		print("Setting up blend filter from ", gun_anim.get_track_count(), " tracks")
+		var filtered_count := 0
+		for i: int in range(gun_anim.get_track_count()):
+			var track_path: NodePath = gun_anim.track_get_path(i)
+			var path_lower: String = String(track_path).to_lower()
+
+			# Only filter arm-related bones
+			var is_arm := false
+			for keyword: String in arm_keywords:
+				if keyword in path_lower:
+					is_arm = true
+					break
+
+			if is_arm:
+				blend_node.set_filter_path(track_path, true)
+				filtered_count += 1
+				print("  Filter: ", track_path)
+		print("Filtered ", filtered_count, " arm tracks")
+
+	# Connect nodes
+	blend_tree.connect_node("Blend", 0, "Lower")  # Base (unfiltered bones)
+	blend_tree.connect_node("Blend", 1, "Upper")  # Override (filtered bones)
+	blend_tree.connect_node("output", 0, "Blend")
+
+	# Set blend amount to 1.0 (full override on filtered bones)
+	anim_tree.set("parameters/Blend/blend_amount", 1.0)
+
+	# Activate
+	anim_tree.active = true
+	print("AnimationTree with Blend2 filter setup complete")
 
 
-func _capture_arm_poses() -> void:
-	# Temporarily play gun_hold_arms to capture arm bone transforms
-	if not anim_player.has_animation(ANIM_GUN_HOLD):
-		print("ERROR: ", ANIM_GUN_HOLD, " not found")
+func _set_lower_animation(anim_name: String) -> void:
+	if not anim_tree or not anim_tree.tree_root:
 		return
-
-	# Play the animation and advance to apply it
-	anim_player.play(ANIM_GUN_HOLD)
-	anim_player.advance(0.0)  # Force animation to apply
-
-	# Wait a frame to ensure skeleton is updated
-	await get_tree().process_frame
-
-	# Capture arm bone transforms
-	for bone_idx: int in arm_bone_indices:
-		var pose: Transform3D = skeleton.get_bone_pose(bone_idx)
-		arm_bone_poses[bone_idx] = pose
-		print("  Captured bone [", bone_idx, "] ", skeleton.get_bone_name(bone_idx), ": ", pose.origin)
-
-	print("Captured ", arm_bone_poses.size(), " arm bone poses")
-
-
-func _set_animation_loop(anim_name: String) -> void:
-	if anim_player and anim_player.has_animation(anim_name):
-		var anim: Animation = anim_player.get_animation(anim_name)
-		anim.loop_mode = Animation.LOOP_LINEAR
-
-
-func _play_animation(anim_name: String, speed: float = 1.0) -> void:
-	if not anim_player:
-		return
-	if current_anim == anim_name and anim_player.is_playing():
-		return
-	if anim_player.has_animation(anim_name):
-		current_anim = anim_name
-		anim_player.play(anim_name, -1, speed)
-
-
-func _apply_arm_override() -> void:
-	# Apply captured arm poses on top of current animation
-	if not skeleton or arm_bone_poses.is_empty():
-		return
-
-	for bone_idx: int in arm_bone_indices:
-		if bone_idx in arm_bone_poses:
-			var pose: Transform3D = arm_bone_poses[bone_idx]
-			# Use individual pose setters in Godot 4
-			skeleton.set_bone_pose_position(bone_idx, pose.origin)
-			skeleton.set_bone_pose_rotation(bone_idx, pose.basis.get_rotation_quaternion())
-			skeleton.set_bone_pose_scale(bone_idx, pose.basis.get_scale())
-
-
-func _process(_delta: float) -> void:
-	# Apply arm override after animation updates
-	if is_multiplayer_authority() and not is_downed:
-		_apply_arm_override()
+	var blend_tree: AnimationNodeBlendTree = anim_tree.tree_root as AnimationNodeBlendTree
+	if blend_tree:
+		var lower_node: AnimationNodeAnimation = blend_tree.get_node("Lower") as AnimationNodeAnimation
+		if lower_node and lower_node.animation != anim_name:
+			lower_node.animation = anim_name
 
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
+
+	# Keep weapon upright and pointing forward (use bone position, but player rotation)
+	if weapon_holder:
+		for weapon in weapons:
+			if weapon:
+				weapon.global_rotation = global_rotation
 
 	if is_downed:
 		_process_downed(delta)
@@ -285,13 +289,13 @@ func _handle_movement_input(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 		AudioManager.play_sound_3d("jump", global_position, -5.0)
 
-	# Update animation based on movement
+	# Update lower body animation based on movement
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
 	if horizontal_speed > 0.5:
-		_play_animation(ANIM_RUN)
+		_set_lower_animation(ANIM_RUN)
 		is_moving = true
 	else:
-		_play_animation(ANIM_IDLE)
+		_set_lower_animation(ANIM_IDLE)
 		is_moving = false
 
 
@@ -397,6 +401,7 @@ func give_weapon(weapon_id_to_give: String) -> bool:
 	weapon.weapon_id = weapon_id_to_give
 
 	weapon_holder.add_child(weapon)
+	weapon.position = Vector3.ZERO
 	weapons.append(weapon)
 
 	# Hide if not current
@@ -425,6 +430,7 @@ func replace_weapon(weapon_id: String) -> void:
 	weapon.set("owner_player", self)
 
 	weapon_holder.add_child(weapon)
+	weapon.position = Vector3.ZERO
 	weapons[current_weapon_index] = weapon
 
 	weapon_changed.emit(weapon)

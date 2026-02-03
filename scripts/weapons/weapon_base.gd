@@ -305,12 +305,7 @@ func _finish_reload() -> void:
 
 func set_aiming(aiming: bool) -> void:
 	is_aiming = aiming
-
-	# Could animate ADS here
-	if is_aiming:
-		position = Vector3(0, -0.1, -0.3)  # ADS position
-	else:
-		position = Vector3(0.3, -0.2, -0.5)  # Hip position
+	# Weapon position is controlled by gun_mount, no offset needed
 
 
 func refill_ammo() -> void:
