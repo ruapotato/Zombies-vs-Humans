@@ -9,11 +9,21 @@ const MIN_PITCH := -89.0
 var pitch := 0.0
 var yaw := 0.0
 
-@onready var player: CharacterBody3D = get_parent().get_parent().get_parent()
-@onready var camera_mount: Node3D = get_parent()
+var player: CharacterBody3D = null
+var camera_mount: Node3D = null
 
 
 func _ready() -> void:
+	# Camera3D -> CameraMount -> Player (2 levels up)
+	camera_mount = get_parent() as Node3D
+	player = get_parent().get_parent() as CharacterBody3D
+
+	if not player:
+		push_error("player_camera: Could not find player node")
+		set_process_input(false)
+		set_process(false)
+		return
+
 	# Only process input for local player
 	if not player.is_multiplayer_authority():
 		set_process_input(false)
@@ -21,7 +31,7 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not player.is_multiplayer_authority():
+	if not player or not player.is_multiplayer_authority():
 		return
 
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
@@ -43,7 +53,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 
 func _process(delta: float) -> void:
-	if not player.is_multiplayer_authority():
+	if not player or not player.is_multiplayer_authority():
 		return
 
 	# Controller look (if using gamepad)
