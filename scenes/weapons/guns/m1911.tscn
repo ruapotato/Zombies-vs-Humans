@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3 uid="uid://mx9m3n5k7h2fx"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="1_weapon"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_m1911"]
+size = Vector3(0.05, 0.12, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m1911"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="M1911" type="Node3D"]
+script = ExtResource("1_weapon")
+weapon_id = "m1911"
+
+[node name="Model" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("BoxMesh_m1911")
+surface_material_override/0 = SubResource("StandardMaterial3D_m1911")
+
+[node name="MuzzlePoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.15)
+
+[node name="FireTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="ReloadTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="MuzzleFlash" type="OmniLight3D" parent="MuzzlePoint"]
+visible = false
+light_color = Color(1, 0.8, 0.4, 1)
+light_energy = 3.0
+omni_range = 3.0
+
+[connection signal="timeout" from="FireTimer" to="." method="_on_fire_timer_timeout"]
+[connection signal="timeout" from="ReloadTimer" to="." method="_on_reload_timer_timeout"]
