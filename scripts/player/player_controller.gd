@@ -71,9 +71,10 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 # Animation
 var anim_player: AnimationPlayer = null
 var current_anim: String = ""
-const ANIM_IDLE := "m root"
+const ANIM_IDLE := "gun_hold_arms"  # Player holds gun
 const ANIM_RUN := "m run"
 const ANIM_JUMP := "m jump"
+const ANIM_GUN_HOLD := "gun_hold_arms"
 
 
 func _ready() -> void:
@@ -190,7 +191,7 @@ func _handle_movement_input(delta: float) -> void:
 		if velocity.length() > 0.5:
 			_play_animation(ANIM_RUN, 1.0 if not is_sprinting else 1.5)
 		else:
-			_play_animation(ANIM_IDLE)
+			_play_animation(ANIM_GUN_HOLD)  # Player always holds gun when idle
 
 
 func _handle_weapon_input() -> void:
