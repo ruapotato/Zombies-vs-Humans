@@ -52,10 +52,10 @@ var is_pouncing: bool = false
 var anim_player: AnimationPlayer = null
 var current_anim: String = ""
 
-# Animation names from the model
-const ANIM_IDLE := "m root_metarig"
-const ANIM_RUN := "m run_metarig"
-const ANIM_DEATH := "m death_metarig"
+# Animation names from the model (Godot strips _metarig suffix)
+const ANIM_IDLE := "m root"
+const ANIM_RUN := "m run"
+const ANIM_DEATH := "m death"
 
 
 func _ready() -> void:
