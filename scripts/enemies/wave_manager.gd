@@ -183,10 +183,9 @@ func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 	if config.has("pounce_range"):
 		zombie.pounce_range = config["pounce_range"]
 
-	# Apply visual config
-	zombie.global_position = spawn_pos
-
+	# Add to tree first, then set position
 	zombies_container.add_child(zombie)
+	zombie.global_position = spawn_pos
 
 	# Apply scale and color after adding to tree
 	if config.has("scale"):

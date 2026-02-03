@@ -65,8 +65,9 @@ enum WeaponType {
 
 
 # Create weapon data from dictionary
-static func from_dict(data: Dictionary) -> WeaponData:
-	var weapon := WeaponData.new()
+static func from_dict(data: Dictionary) -> Resource:
+	var script: GDScript = load("res://scripts/weapons/weapon_data.gd")
+	var weapon: Resource = script.new()
 
 	weapon.weapon_id = data.get("weapon_id", "")
 	weapon.display_name = data.get("display_name", "")

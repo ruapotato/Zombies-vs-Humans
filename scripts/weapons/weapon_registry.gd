@@ -2,13 +2,15 @@ extends Node
 class_name WeaponRegistry
 ## Static weapon data registry
 
+const WeaponDataScript = preload("res://scripts/weapons/weapon_data.gd")
+
 # All weapon definitions
 static var WEAPONS: Dictionary = {
 	# Starting Pistol
 	"m1911": {
 		"weapon_id": "m1911",
 		"display_name": "M1911",
-		"weapon_type": WeaponData.WeaponType.PISTOL,
+		"weapon_type": WeaponDataScript.WeaponType.PISTOL,
 		"base_damage": 30,
 		"fire_rate": 0.15,
 		"is_automatic": false,
@@ -29,7 +31,7 @@ static var WEAPONS: Dictionary = {
 	"olympia": {
 		"weapon_id": "olympia",
 		"display_name": "Olympia",
-		"weapon_type": WeaponData.WeaponType.SHOTGUN,
+		"weapon_type": WeaponDataScript.WeaponType.SHOTGUN,
 		"base_damage": 120,
 		"pellet_count": 8,
 		"fire_rate": 0.8,
@@ -51,7 +53,7 @@ static var WEAPONS: Dictionary = {
 	"m14": {
 		"weapon_id": "m14",
 		"display_name": "M14",
-		"weapon_type": WeaponData.WeaponType.RIFLE,
+		"weapon_type": WeaponDataScript.WeaponType.RIFLE,
 		"base_damage": 80,
 		"fire_rate": 0.2,
 		"is_automatic": false,
@@ -71,7 +73,7 @@ static var WEAPONS: Dictionary = {
 	"mp5": {
 		"weapon_id": "mp5",
 		"display_name": "MP5K",
-		"weapon_type": WeaponData.WeaponType.SMG,
+		"weapon_type": WeaponDataScript.WeaponType.SMG,
 		"base_damage": 40,
 		"fire_rate": 0.075,
 		"is_automatic": true,
@@ -91,7 +93,7 @@ static var WEAPONS: Dictionary = {
 	"ak47": {
 		"weapon_id": "ak47",
 		"display_name": "AK-47",
-		"weapon_type": WeaponData.WeaponType.AR,
+		"weapon_type": WeaponDataScript.WeaponType.AR,
 		"base_damage": 70,
 		"fire_rate": 0.1,
 		"is_automatic": true,
@@ -112,7 +114,7 @@ static var WEAPONS: Dictionary = {
 	"stakeout": {
 		"weapon_id": "stakeout",
 		"display_name": "Stakeout",
-		"weapon_type": WeaponData.WeaponType.SHOTGUN,
+		"weapon_type": WeaponDataScript.WeaponType.SHOTGUN,
 		"base_damage": 160,
 		"pellet_count": 8,
 		"fire_rate": 0.6,
@@ -135,7 +137,7 @@ static var WEAPONS: Dictionary = {
 	"ray_gun": {
 		"weapon_id": "ray_gun",
 		"display_name": "Ray Gun",
-		"weapon_type": WeaponData.WeaponType.WONDER,
+		"weapon_type": WeaponDataScript.WeaponType.WONDER,
 		"base_damage": 200,
 		"fire_rate": 0.3,
 		"is_automatic": false,
@@ -155,7 +157,7 @@ static var WEAPONS: Dictionary = {
 	"thundergun": {
 		"weapon_id": "thundergun",
 		"display_name": "Thundergun",
-		"weapon_type": WeaponData.WeaponType.WONDER,
+		"weapon_type": WeaponDataScript.WeaponType.WONDER,
 		"base_damage": 9999,
 		"fire_rate": 1.5,
 		"is_automatic": false,
@@ -176,7 +178,7 @@ static var WEAPONS: Dictionary = {
 	"rpk": {
 		"weapon_id": "rpk",
 		"display_name": "RPK",
-		"weapon_type": WeaponData.WeaponType.LMG,
+		"weapon_type": WeaponDataScript.WeaponType.LMG,
 		"base_damage": 60,
 		"fire_rate": 0.08,
 		"is_automatic": true,
@@ -195,7 +197,7 @@ static var WEAPONS: Dictionary = {
 	"galil": {
 		"weapon_id": "galil",
 		"display_name": "Galil",
-		"weapon_type": WeaponData.WeaponType.AR,
+		"weapon_type": WeaponDataScript.WeaponType.AR,
 		"base_damage": 75,
 		"fire_rate": 0.09,
 		"is_automatic": true,
@@ -214,7 +216,7 @@ static var WEAPONS: Dictionary = {
 	"python": {
 		"weapon_id": "python",
 		"display_name": "Python",
-		"weapon_type": WeaponData.WeaponType.PISTOL,
+		"weapon_type": WeaponDataScript.WeaponType.PISTOL,
 		"base_damage": 100,
 		"fire_rate": 0.25,
 		"is_automatic": false,
@@ -233,7 +235,7 @@ static var WEAPONS: Dictionary = {
 	"spas12": {
 		"weapon_id": "spas12",
 		"display_name": "SPAS-12",
-		"weapon_type": WeaponData.WeaponType.SHOTGUN,
+		"weapon_type": WeaponDataScript.WeaponType.SHOTGUN,
 		"base_damage": 140,
 		"pellet_count": 8,
 		"fire_rate": 0.4,
@@ -254,7 +256,7 @@ static var WEAPONS: Dictionary = {
 	"dragunov": {
 		"weapon_id": "dragunov",
 		"display_name": "Dragunov",
-		"weapon_type": WeaponData.WeaponType.SNIPER,
+		"weapon_type": WeaponDataScript.WeaponType.SNIPER,
 		"base_damage": 300,
 		"fire_rate": 0.35,
 		"is_automatic": false,
@@ -273,7 +275,7 @@ static var WEAPONS: Dictionary = {
 	"commando": {
 		"weapon_id": "commando",
 		"display_name": "Commando",
-		"weapon_type": WeaponData.WeaponType.AR,
+		"weapon_type": WeaponDataScript.WeaponType.AR,
 		"base_damage": 65,
 		"fire_rate": 0.085,
 		"is_automatic": true,
@@ -292,7 +294,7 @@ static var WEAPONS: Dictionary = {
 	"aug": {
 		"weapon_id": "aug",
 		"display_name": "AUG",
-		"weapon_type": WeaponData.WeaponType.AR,
+		"weapon_type": WeaponDataScript.WeaponType.AR,
 		"base_damage": 68,
 		"fire_rate": 0.08,
 		"is_automatic": true,
@@ -311,7 +313,7 @@ static var WEAPONS: Dictionary = {
 	"famas": {
 		"weapon_id": "famas",
 		"display_name": "FAMAS",
-		"weapon_type": WeaponData.WeaponType.AR,
+		"weapon_type": WeaponDataScript.WeaponType.AR,
 		"base_damage": 60,
 		"fire_rate": 0.065,
 		"is_automatic": true,
@@ -329,9 +331,9 @@ static var WEAPONS: Dictionary = {
 }
 
 
-static func get_weapon_data(weapon_id: String) -> WeaponData:
+static func get_weapon_data(weapon_id: String) -> Resource:
 	if weapon_id in WEAPONS:
-		return WeaponData.from_dict(WEAPONS[weapon_id])
+		return WeaponDataScript.from_dict(WEAPONS[weapon_id])
 	return null
 
 

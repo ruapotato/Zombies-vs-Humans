@@ -2,8 +2,6 @@ extends Node3D
 class_name Weapon
 ## Base weapon class with shooting, reloading, and damage
 
-const WeaponRegistryClass = preload("res://scripts/weapons/weapon_registry.gd")
-
 signal ammo_changed(current_ammo: int, reserve_ammo: int)
 signal reloading_started
 signal reloading_finished
@@ -62,7 +60,8 @@ func _ready() -> void:
 
 
 func _load_weapon_data() -> void:
-	var data: WeaponData = WeaponRegistryClass.get_weapon_data(weapon_id)
+	var registry_script: GDScript = load("res://scripts/weapons/weapon_registry.gd")
+	var data: Resource = registry_script.get_weapon_data(weapon_id)
 	if not data:
 		push_warning("Weapon data not found for: %s" % weapon_id)
 		return
@@ -291,8 +290,8 @@ func _start_reload() -> void:
 func _finish_reload() -> void:
 	is_reloading = false
 
-	var needed := magazine_size - current_ammo
-	var available := min(needed, reserve_ammo)
+	var needed: int = magazine_size - current_ammo
+	var available: int = min(needed, reserve_ammo) as int
 
 	current_ammo += available
 	reserve_ammo -= available
@@ -331,7 +330,8 @@ func pack_a_punch() -> void:
 	is_pack_a_punched = true
 
 	# Update weapon name
-	var data: WeaponData = WeaponRegistryClass.get_weapon_data(weapon_id)
+	var registry_script: GDScript = load("res://scripts/weapons/weapon_registry.gd")
+	var data: Resource = registry_script.get_weapon_data(weapon_id)
 	if data and data.pap_name != "":
 		display_name = data.pap_name
 
