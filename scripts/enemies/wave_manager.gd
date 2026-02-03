@@ -11,13 +11,13 @@ const SPAWN_DELAY_BASE := 2.0
 const SPAWN_DELAY_MIN := 0.5
 const MAX_ACTIVE_ZOMBIES := 24
 
-# Enemy scenes
+# Enemy scenes - each type has its own distinct model
 var enemy_scenes: Dictionary = {
-	"dretch": preload("res://scenes/enemies/enemy_base.tscn"),
-	"basilisk": preload("res://scenes/enemies/enemy_base.tscn"),
-	"marauder": preload("res://scenes/enemies/enemy_base.tscn"),
-	"dragoon": preload("res://scenes/enemies/enemy_base.tscn"),
-	"tyrant": preload("res://scenes/enemies/enemy_base.tscn")
+	"dretch": preload("res://scenes/enemies/dretch.tscn"),
+	"basilisk": preload("res://scenes/enemies/basilisk.tscn"),
+	"marauder": preload("res://scenes/enemies/marauder.tscn"),
+	"dragoon": preload("res://scenes/enemies/dragoon.tscn"),
+	"tyrant": preload("res://scenes/enemies/tyrant.tscn")
 }
 
 # Enemy type configurations
