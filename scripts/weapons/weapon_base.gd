@@ -97,13 +97,20 @@ func _load_weapon_data() -> void:
 
 
 func try_shoot() -> bool:
-	if not can_fire or is_reloading:
+	if not can_fire:
+		return false
+
+	if is_reloading:
 		return false
 
 	if current_ammo <= 0:
 		# Empty click
 		AudioManager.play_sound_3d("empty_clip", global_position, -5.0)
 		try_reload()
+		return false
+
+	if not owner_player:
+		push_warning("Weapon has no owner_player set!")
 		return false
 
 	_shoot()

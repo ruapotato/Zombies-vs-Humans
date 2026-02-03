@@ -131,7 +131,12 @@ func start_wave(wave_number: int) -> void:
 
 	wave_started.emit(wave_number)
 
-	print("Wave %d started: %d zombies to spawn" % [wave_number, zombies_to_spawn])
+	print("Wave %d started: %d zombies to spawn, %d spawn positions, container: %s" % [
+		wave_number,
+		zombies_to_spawn,
+		spawn_positions.size(),
+		zombies_container != null
+	])
 
 
 func _spawn_zombie() -> void:

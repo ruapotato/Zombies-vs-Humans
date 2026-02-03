@@ -52,18 +52,10 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	camera_mount.rotation.x = pitch
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not player or not player.is_multiplayer_authority():
 		return
 
-	# Controller look (if using gamepad)
-	var look_input := Input.get_vector("look_left", "look_right", "look_up", "look_down")
-
-	if look_input.length() > 0.1:
-		yaw -= look_input.x * CONTROLLER_SENSITIVITY * delta
-		pitch -= look_input.y * CONTROLLER_SENSITIVITY * delta
-
-		pitch = clamp(pitch, deg_to_rad(MIN_PITCH), deg_to_rad(MAX_PITCH))
-
-		player.rotation.y = yaw
-		camera_mount.rotation.x = pitch
+	# Controller look support is disabled - mouse look only
+	# To add controller support, define look_left/right/up/down actions in Project Settings
+	pass

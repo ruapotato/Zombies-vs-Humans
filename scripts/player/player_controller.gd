@@ -237,18 +237,23 @@ func _give_starting_weapon() -> void:
 	give_weapon("m1911")
 
 
-func give_weapon(weapon_id: String) -> bool:
+func give_weapon(weapon_id_to_give: String) -> bool:
 	if weapons.size() >= max_weapons:
 		return false
 
-	var weapon_scene_path: String = "res://scenes/weapons/guns/%s.tscn" % weapon_id
+	var weapon_scene_path: String = "res://scenes/weapons/guns/%s.tscn" % weapon_id_to_give
 	if not ResourceLoader.exists(weapon_scene_path):
 		weapon_scene_path = "res://scenes/weapons/weapon_base.tscn"
 
 	var weapon_scene: PackedScene = load(weapon_scene_path)
 	var weapon: Node3D = weapon_scene.instantiate() as Node3D
-	weapon.set("weapon_id", weapon_id)
-	weapon.set("owner_player", self)
+
+	# Set weapon properties directly
+	if weapon.has_method("set_owner_player"):
+		weapon.set_owner_player(self)
+	else:
+		weapon.owner_player = self
+	weapon.weapon_id = weapon_id_to_give
 
 	weapon_holder.add_child(weapon)
 	weapons.append(weapon)
@@ -257,6 +262,7 @@ func give_weapon(weapon_id: String) -> bool:
 	weapon.visible = (weapons.size() - 1 == current_weapon_index)
 
 	weapon_changed.emit(get_current_weapon())
+	print("Gave weapon: %s, owner: %s" % [weapon_id_to_give, weapon.owner_player])
 	return true
 
 
