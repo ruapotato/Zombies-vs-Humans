@@ -1,0 +1,37 @@
+[gd_scene load_steps=4 format=3 uid="uid://ix9m3n5k7h2bu"]
+
+[ext_resource type="Script" path="res://scripts/interactables/power_switch.gd" id="1_switch"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_switch"]
+size = Vector3(0.5, 1, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_switch"]
+size = Vector3(0.5, 1, 0.3)
+
+[node name="PowerSwitch" type="Area3D" groups=["interactables"]]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1_switch")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_switch")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("BoxMesh_switch")
+
+[node name="Lever" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0.2)
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0.2)
+text = "POWER"
+font_size = 24
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.3)
+visible = false
+light_color = Color(0, 1, 0, 1)
+light_energy = 2.0
+omni_range = 3.0

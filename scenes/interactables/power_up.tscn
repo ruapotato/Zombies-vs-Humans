@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3 uid="uid://hx9m3n5k7h2at"]
+
+[ext_resource type="Script" path="res://scripts/interactables/power_up.gd" id="1_powerup"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
+radius = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_powerup"]
+radius = 0.4
+height = 0.8
+
+[node name="PowerUp" type="Area3D" groups=["powerups"]]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_powerup")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_powerup")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_powerup")
+
+[node name="Light" type="OmniLight3D" parent="."]
+light_color = Color(0, 1, 0, 1)
+light_energy = 3.0
+omni_range = 4.0
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+billboard = 1
+text = "Power-Up"
+font_size = 24
+
+[node name="DespawnTimer" type="Timer" parent="."]
+wait_time = 30.0
+one_shot = true
+autostart = true
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="timeout" from="DespawnTimer" to="." method="_on_despawn_timer_timeout"]

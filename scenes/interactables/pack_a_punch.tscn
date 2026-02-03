@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3 uid="uid://ez7n3m5k8h2xq"]
+
+[ext_resource type="Script" path="res://scripts/interactables/pack_a_punch.gd" id="1_pap"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pap"]
+size = Vector3(2, 1.5, 1.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pap"]
+size = Vector3(2, 1.5, 1.5)
+
+[node name="PackAPunch" type="Area3D" groups=["interactables", "power_dependent"]]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1_pap")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("BoxShape3D_pap")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("BoxMesh_pap")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0.76)
+text = "Pack-a-Punch"
+font_size = 36
+modulate = Color(1, 0.5, 0, 1)
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+light_color = Color(1, 0.5, 0, 1)
+light_energy = 3.0
+omni_range = 6.0
+
+[node name="UpgradeTimer" type="Timer" parent="."]
+wait_time = 5.0
+one_shot = true
+
+[node name="GrabTimer" type="Timer" parent="."]
+wait_time = 10.0
+one_shot = true
+
+[connection signal="timeout" from="UpgradeTimer" to="." method="_on_upgrade_timer_timeout"]
+[connection signal="timeout" from="GrabTimer" to="." method="_on_grab_timer_timeout"]

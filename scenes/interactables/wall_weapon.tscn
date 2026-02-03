@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://dy8n3k5m7h2xp"]
+
+[ext_resource type="Script" path="res://scripts/interactables/wall_weapon.gd" id="1_wall"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(1.5, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(1.5, 0.5, 0.3)
+
+[node name="WallWeapon" type="Area3D" groups=["interactables"]]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("BoxShape3D_wall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="WeaponOutline" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0.2)
+text = "Weapon"
+font_size = 24
+
+[node name="CostLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0.2)
+text = "500"
+font_size = 20
+modulate = Color(1, 0.84, 0, 1)

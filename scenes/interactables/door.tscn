@@ -1,0 +1,41 @@
+[gd_scene load_steps=4 format=3 uid="uid://gx9m3n5k7h2zs"]
+
+[ext_resource type="Script" path="res://scripts/interactables/door.gd" id="1_door"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+size = Vector3(4, 3, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+size = Vector3(4, 3, 0.5)
+
+[node name="Door" type="StaticBody3D" groups=["doors", "interactables"]]
+collision_layer = 17
+collision_mask = 0
+script = ExtResource("1_door")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_door")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("BoxMesh_door")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0.3)
+text = "Door"
+font_size = 36
+
+[node name="CostLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.3)
+text = "750"
+font_size = 48
+modulate = Color(1, 0.84, 0, 1)
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 2
+
+[node name="AreaShape" type="CollisionShape3D" parent="InteractionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -1)
+shape = SubResource("BoxShape3D_door")

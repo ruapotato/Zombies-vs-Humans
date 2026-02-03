@@ -1,0 +1,41 @@
+[gd_scene load_steps=4 format=3 uid="uid://fx8m3n5k7h2yr"]
+
+[ext_resource type="Script" path="res://scripts/interactables/barrier.gd" id="1_barrier"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
+size = Vector3(3, 2, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrier"]
+size = Vector3(3, 2, 0.3)
+
+[node name="Barrier" type="StaticBody3D" groups=["barriers"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_barrier")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="Boards" type="Node3D" parent="."]
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 2
+
+[node name="AreaShape" type="CollisionShape3D" parent="InteractionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -1)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="ZombieSpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="RepairTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[connection signal="timeout" from="RepairTimer" to="." method="_on_repair_timer_timeout"]
