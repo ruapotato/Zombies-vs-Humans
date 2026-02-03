@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://tyrant_enemy_scene"]
+[gd_scene load_steps=7 format=3 uid="uid://tyrant_enemy_scene"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="Texture2D" path="res://assets/textures/enemies/tyrant_diffuse.png" id="2_texture"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.8
@@ -15,6 +16,7 @@ height = 3.2
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tyrant"]
 albedo_color = Color(0.3, 0.2, 0.2, 1)
+albedo_texture = ExtResource("2_texture")
 roughness = 0.4
 metallic = 0.5
 emission_enabled = true
