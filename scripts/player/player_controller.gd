@@ -90,13 +90,20 @@ func _ready() -> void:
 	if is_multiplayer_authority():
 		camera.current = true
 		$CameraMount/Camera3D/AudioListener3D.make_current()
-		model.visible = false  # Hide own model in first person
+		# Keep model visible so we see arms holding gun
+		# Hide head mesh to not block camera view
+		_setup_first_person_model()
 	else:
 		camera.current = false
 		set_physics_process(false)
 
 	# Give starting weapon
 	_give_starting_weapon()
+
+
+func _setup_first_person_model() -> void:
+	# Keep model visible - gun_hold_arms shows arms in front
+	model.visible = true
 
 
 func _find_animation_player(node: Node) -> void:
@@ -186,12 +193,9 @@ func _handle_movement_input(delta: float) -> void:
 		_play_animation(ANIM_JUMP, 1.5)
 		AudioManager.play_sound_3d("jump", global_position, -5.0)
 
-	# Update animation based on movement
-	if is_on_floor():
-		if velocity.length() > 0.5:
-			_play_animation(ANIM_RUN, 1.0 if not is_sprinting else 1.5)
-		else:
-			_play_animation(ANIM_GUN_HOLD)  # Player always holds gun when idle
+	# Always keep gun_hold_arms playing - arms stay in gun position
+	# The AnimationTree will blend legs for movement
+	_play_animation(ANIM_GUN_HOLD)
 
 
 func _handle_weapon_input() -> void:
