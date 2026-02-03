@@ -41,7 +41,7 @@ func _ready() -> void:
 func host_game(port: int = DEFAULT_PORT, player_name: String = "Host") -> Error:
 	peer = ENetMultiplayerPeer.new()
 
-	var error := peer.create_server(port, MAX_CLIENTS)
+	var error: Error = peer.create_server(port, MAX_CLIENTS)
 	if error != OK:
 		push_error("Failed to create server: %s" % error_string(error))
 		return error
@@ -60,7 +60,7 @@ func host_game(port: int = DEFAULT_PORT, player_name: String = "Host") -> Error:
 func join_game(address: String, port: int = DEFAULT_PORT, player_name: String = "Player") -> Error:
 	peer = ENetMultiplayerPeer.new()
 
-	var error := peer.create_client(address, port)
+	var error: Error = peer.create_client(address, port)
 	if error != OK:
 		push_error("Failed to create client: %s" % error_string(error))
 		return error
@@ -107,7 +107,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	print("Peer disconnected: %d" % peer_id)
 
 	if peer_id in connected_players:
-		var player_info := connected_players[peer_id]
+		var player_info: Dictionary = connected_players[peer_id]
 		connected_players.erase(peer_id)
 		players_loaded.erase(peer_id)
 
@@ -144,7 +144,7 @@ func _on_server_disconnected() -> void:
 
 @rpc("any_peer", "reliable")
 func _register_player(player_info: Dictionary) -> void:
-	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_id: int = multiplayer.get_remote_sender_id()
 
 	if not multiplayer.is_server():
 		return
@@ -188,7 +188,7 @@ func set_player_color(color: Color) -> void:
 
 @rpc("any_peer", "reliable")
 func _update_player_info(player_info: Dictionary) -> void:
-	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_id: int = multiplayer.get_remote_sender_id()
 
 	if not multiplayer.is_server():
 		return
@@ -216,7 +216,7 @@ func start_game() -> void:
 
 	# Reset loaded state
 	players_loaded.clear()
-	for peer_id in connected_players:
+	for peer_id: int in connected_players:
 		players_loaded[peer_id] = false
 
 	game_starting.emit()
@@ -224,9 +224,9 @@ func start_game() -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _load_game(map_name: String) -> void:
+func _load_game(_map_name: String) -> void:
 	# Load the game scene
-	var game_scene_path := "res://scenes/main/game.tscn"
+	var game_scene_path: String = "res://scenes/main/game.tscn"
 
 	get_tree().change_scene_to_file(game_scene_path)
 
@@ -240,7 +240,7 @@ func _load_game(map_name: String) -> void:
 
 @rpc("any_peer", "reliable")
 func _player_loaded() -> void:
-	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_id: int = multiplayer.get_remote_sender_id()
 
 	if not multiplayer.is_server():
 		return
@@ -248,8 +248,8 @@ func _player_loaded() -> void:
 	players_loaded[sender_id] = true
 
 	# Check if all players are loaded
-	var all_loaded := true
-	for peer_id in connected_players:
+	var all_loaded: bool = true
+	for peer_id: int in connected_players:
 		if not players_loaded.get(peer_id, false):
 			all_loaded = false
 			break
@@ -278,19 +278,19 @@ func spawn_player(peer_id: int, spawn_position: Vector3) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _spawn_player_at(peer_id: int, spawn_position: Vector3) -> void:
-	var player_scene := preload("res://scenes/player/player.tscn")
-	var player := player_scene.instantiate()
+	var player_scene: PackedScene = preload("res://scenes/player/player.tscn")
+	var player: CharacterBody3D = player_scene.instantiate()
 
 	player.name = "Player_%d" % peer_id
 	player.set_multiplayer_authority(peer_id)
-	player.player_id = peer_id
+	player.set("player_id", peer_id)
 	player.global_position = spawn_position
 
 	if peer_id in connected_players:
-		player.player_name = connected_players[peer_id].get("name", "Player")
-		player.player_color = connected_players[peer_id].get("color", Color.WHITE)
+		player.set("player_name", connected_players[peer_id].get("name", "Player"))
+		player.set("player_color", connected_players[peer_id].get("color", Color.WHITE))
 
-	var game_scene := get_tree().current_scene
+	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Players"):
 		game_scene.get_node("Players").add_child(player)
 
@@ -306,10 +306,10 @@ func despawn_player(peer_id: int) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _despawn_player(peer_id: int) -> void:
-	var game_scene := get_tree().current_scene
+	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Players"):
-		var players_node := game_scene.get_node("Players")
-		var player_name := "Player_%d" % peer_id
+		var players_node: Node = game_scene.get_node("Players")
+		var player_name: String = "Player_%d" % peer_id
 		if players_node.has_node(player_name):
 			players_node.get_node(player_name).queue_free()
 
@@ -320,7 +320,7 @@ func _despawn_player(peer_id: int) -> void:
 signal chat_message_received(sender_id: int, sender_name: String, message: String)
 
 func send_chat_message(message: String) -> void:
-	var sender_name := local_player_info.get("name", "Player")
+	var sender_name: String = str(local_player_info.get("name", "Player"))
 	rpc("_receive_chat_message", multiplayer.get_unique_id(), sender_name, message)
 
 

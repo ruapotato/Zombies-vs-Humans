@@ -80,11 +80,12 @@ func _ready() -> void:
 		set_physics_process(false)
 
 	# Apply player color to mesh
-	var material := mesh.get_surface_override_material(0)
+	var material: Material = mesh.get_surface_override_material(0)
 	if material:
-		material = material.duplicate()
-		material.albedo_color = player_color
-		mesh.set_surface_override_material(0, material)
+		var new_mat: StandardMaterial3D = material.duplicate() as StandardMaterial3D
+		if new_mat:
+			new_mat.albedo_color = player_color
+			mesh.set_surface_override_material(0, new_mat)
 
 	# Give starting weapon
 	_give_starting_weapon()
@@ -140,16 +141,16 @@ func _handle_movement_input(delta: float) -> void:
 		current_speed *= 1.07
 
 	# Calculate movement direction
-	var direction := (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
+	var direction: Vector3 = (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
 
 	if direction:
-		var accel := ACCELERATION if is_on_floor() else ACCELERATION * AIR_CONTROL
+		var accel: float = ACCELERATION if is_on_floor() else ACCELERATION * AIR_CONTROL
 		velocity.x = move_toward(velocity.x, direction.x * current_speed, accel * delta)
 		velocity.z = move_toward(velocity.z, direction.z * current_speed, accel * delta)
 	else:
-		var friction := FRICTION if is_on_floor() else FRICTION * AIR_CONTROL
-		velocity.x = move_toward(velocity.x, 0, friction * delta)
-		velocity.z = move_toward(velocity.z, 0, friction * delta)
+		var friction_val: float = FRICTION if is_on_floor() else FRICTION * AIR_CONTROL
+		velocity.x = move_toward(velocity.x, 0, friction_val * delta)
+		velocity.z = move_toward(velocity.z, 0, friction_val * delta)
 
 	# Jumping
 	if Input.is_action_just_pressed("jump") and is_on_floor():
@@ -161,24 +162,28 @@ func _handle_weapon_input() -> void:
 	if weapons.is_empty():
 		return
 
-	var current_weapon := get_current_weapon()
+	var current_weapon: Node = get_current_weapon()
 	if not current_weapon:
 		return
 
 	# Shooting
 	if Input.is_action_pressed("shoot"):
 		if not is_sprinting and not is_reloading:
-			current_weapon.try_shoot()
+			if current_weapon.has_method("try_shoot"):
+				current_weapon.try_shoot()
 
 	# Aiming
 	if Input.is_action_pressed("aim"):
-		current_weapon.set_aiming(true)
+		if current_weapon.has_method("set_aiming"):
+			current_weapon.set_aiming(true)
 	else:
-		current_weapon.set_aiming(false)
+		if current_weapon.has_method("set_aiming"):
+			current_weapon.set_aiming(false)
 
 	# Reload
 	if Input.is_action_just_pressed("reload"):
-		current_weapon.try_reload()
+		if current_weapon.has_method("try_reload"):
+			current_weapon.try_reload()
 
 	# Switch weapon
 	if Input.is_action_just_pressed("switch_weapon"):
@@ -191,7 +196,7 @@ func _switch_weapon() -> void:
 
 	current_weapon_index = (current_weapon_index + 1) % weapons.size()
 
-	for i in range(weapons.size()):
+	for i: int in range(weapons.size()):
 		weapons[i].visible = (i == current_weapon_index)
 
 	weapon_changed.emit(get_current_weapon())
@@ -204,7 +209,7 @@ func _switch_weapon() -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _sync_weapon_switch(index: int) -> void:
 	current_weapon_index = index
-	for i in range(weapons.size()):
+	for i: int in range(weapons.size()):
 		weapons[i].visible = (i == current_weapon_index)
 
 
@@ -212,7 +217,7 @@ func _handle_interaction() -> void:
 	if not interaction_ray.is_colliding():
 		return
 
-	var collider := interaction_ray.get_collider()
+	var collider: Object = interaction_ray.get_collider()
 	if not collider:
 		return
 
@@ -236,14 +241,14 @@ func give_weapon(weapon_id: String) -> bool:
 	if weapons.size() >= max_weapons:
 		return false
 
-	var weapon_scene_path := "res://scenes/weapons/guns/%s.tscn" % weapon_id
+	var weapon_scene_path: String = "res://scenes/weapons/guns/%s.tscn" % weapon_id
 	if not ResourceLoader.exists(weapon_scene_path):
 		weapon_scene_path = "res://scenes/weapons/weapon_base.tscn"
 
-	var weapon_scene := load(weapon_scene_path)
-	var weapon := weapon_scene.instantiate()
-	weapon.weapon_id = weapon_id
-	weapon.owner_player = self
+	var weapon_scene: PackedScene = load(weapon_scene_path)
+	var weapon: Node3D = weapon_scene.instantiate() as Node3D
+	weapon.set("weapon_id", weapon_id)
+	weapon.set("owner_player", self)
 
 	weapon_holder.add_child(weapon)
 	weapons.append(weapon)
@@ -260,17 +265,17 @@ func replace_weapon(weapon_id: String) -> void:
 		give_weapon(weapon_id)
 		return
 
-	var old_weapon := weapons[current_weapon_index]
+	var old_weapon: Node = weapons[current_weapon_index]
 	old_weapon.queue_free()
 
-	var weapon_scene_path := "res://scenes/weapons/guns/%s.tscn" % weapon_id
+	var weapon_scene_path: String = "res://scenes/weapons/guns/%s.tscn" % weapon_id
 	if not ResourceLoader.exists(weapon_scene_path):
 		weapon_scene_path = "res://scenes/weapons/weapon_base.tscn"
 
-	var weapon_scene := load(weapon_scene_path)
-	var weapon := weapon_scene.instantiate()
-	weapon.weapon_id = weapon_id
-	weapon.owner_player = self
+	var weapon_scene: PackedScene = load(weapon_scene_path)
+	var weapon: Node3D = weapon_scene.instantiate() as Node3D
+	weapon.set("weapon_id", weapon_id)
+	weapon.set("owner_player", self)
 
 	weapon_holder.add_child(weapon)
 	weapons[current_weapon_index] = weapon
@@ -278,7 +283,7 @@ func replace_weapon(weapon_id: String) -> void:
 	weapon_changed.emit(weapon)
 
 
-func take_damage(amount: int, attacker: Node = null) -> void:
+func take_damage(amount: int, _attacker: Node = null) -> void:
 	if is_downed:
 		return
 
@@ -336,7 +341,7 @@ func _process_downed(delta: float) -> void:
 
 	# Check if being revived
 	if reviver and is_instance_valid(reviver):
-		var revive_speed := 1.0
+		var revive_speed: float = 1.0
 		if reviver.has_perk("quick_revive"):
 			revive_speed = 2.0
 
@@ -479,18 +484,18 @@ func _remove_perk_effect(perk_name: String) -> void:
 			max_weapons = 2
 			# Drop third weapon if holding one
 			if weapons.size() > 2:
-				var dropped := weapons.pop_back()
+				var dropped: Node = weapons.pop_back()
 				dropped.queue_free()
 				current_weapon_index = min(current_weapon_index, weapons.size() - 1)
 
 
 func clear_perks() -> void:
-	for perk_name in perks.duplicate():
+	for perk_name: String in perks.duplicate():
 		remove_perk(perk_name)
 
 
 func refill_ammo() -> void:
-	for weapon in weapons:
+	for weapon: Node in weapons:
 		if weapon.has_method("refill_ammo"):
 			weapon.refill_ammo()
 

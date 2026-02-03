@@ -41,20 +41,20 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if current_state != GameState.PLAYING:
 		return
 
 	# Update active power-ups
-	var current_time := Time.get_ticks_msec() / 1000.0
+	var current_time: float = Time.get_ticks_msec() / 1000.0
 	var expired_power_ups: Array[String] = []
 
-	for power_up_type in active_power_ups:
-		if current_time >= active_power_ups[power_up_type]:
-			expired_power_ups.append(power_up_type)
+	for key: String in active_power_ups:
+		if current_time >= active_power_ups[key]:
+			expired_power_ups.append(key)
 
-	for power_up_type in expired_power_ups:
-		active_power_ups.erase(power_up_type)
+	for key: String in expired_power_ups:
+		active_power_ups.erase(key)
 
 
 func start_game() -> void:
@@ -66,7 +66,7 @@ func start_game() -> void:
 	game_start_time = Time.get_ticks_msec() / 1000.0
 
 	# Initialize player stats
-	for player_id in players:
+	for player_id: int in players:
 		player_stats[player_id] = {
 			"kills": 0,
 			"headshots": 0,
@@ -84,7 +84,7 @@ func start_next_round() -> void:
 	round_start_time = Time.get_ticks_msec() / 1000.0
 
 	# Calculate zombies for this round
-	var player_count := max(1, players.size())
+	var player_count: int = max(1, players.size())
 	zombies_remaining = BASE_ZOMBIES_PER_ROUND + (current_round * 2) + (player_count * ZOMBIES_PER_PLAYER)
 
 	round_started.emit(current_round)
@@ -107,8 +107,8 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 	total_zombies_killed += 1
 
 	# Calculate points
-	var base_points := zombie.get_meta("point_value", 10)
-	var points := base_points
+	var base_points: int = zombie.get_meta("point_value", 10)
+	var points: int = base_points
 
 	if is_headshot:
 		points += 50
@@ -139,7 +139,7 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 
 func _try_spawn_power_up(position: Vector3) -> void:
 	# 2% base chance, slightly higher on later rounds
-	var chance := 0.02 + (current_round * 0.002)
+	var chance: float = 0.02 + (current_round * 0.002)
 	chance = min(chance, 0.05)  # Cap at 5%
 
 	if randf() < chance:
@@ -150,25 +150,25 @@ func spawn_power_up(position: Vector3, forced_type: String = "") -> void:
 	if not multiplayer.is_server():
 		return
 
-	var power_up_types := ["max_ammo", "insta_kill", "double_points", "nuke", "carpenter"]
+	var power_up_types: Array[String] = ["max_ammo", "insta_kill", "double_points", "nuke", "carpenter"]
 
 	# Fire sale only when mystery box exists and power is on
 	if power_is_on:
 		power_up_types.append("fire_sale")
 
-	var power_up_type := forced_type if forced_type != "" else power_up_types[randi() % power_up_types.size()]
+	var selected_type: String = forced_type if forced_type != "" else power_up_types[randi() % power_up_types.size()]
 
-	rpc("_spawn_power_up_at", position, power_up_type)
+	rpc("_spawn_power_up_at", position, selected_type)
 
 
 @rpc("authority", "call_local", "reliable")
 func _spawn_power_up_at(position: Vector3, power_up_type: String) -> void:
-	var power_up_scene := preload("res://scenes/interactables/power_up.tscn")
-	var power_up := power_up_scene.instantiate()
-	power_up.power_up_type = power_up_type
+	var power_up_scene: PackedScene = preload("res://scenes/interactables/power_up.tscn")
+	var power_up: Node3D = power_up_scene.instantiate()
+	power_up.set("power_up_type", power_up_type)
 	power_up.global_position = position
 
-	var game_scene := get_tree().current_scene
+	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("PowerUps"):
 		game_scene.get_node("PowerUps").add_child(power_up)
 
@@ -184,13 +184,14 @@ func collect_power_up(power_up_type: String, collector_id: int) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _apply_power_up(power_up_type: String, collector_id: int) -> void:
-	var duration := 30.0
-	var current_time := Time.get_ticks_msec() / 1000.0
+	var duration: float = 30.0
+	var current_time: float = Time.get_ticks_msec() / 1000.0
 
 	match power_up_type:
 		"max_ammo":
-			for player in players.values():
-				player.refill_ammo()
+			for player: Node in players.values():
+				if player.has_method("refill_ammo"):
+					player.refill_ammo()
 
 		"insta_kill":
 			active_power_ups["insta_kill"] = current_time + duration
@@ -211,32 +212,34 @@ func _apply_power_up(power_up_type: String, collector_id: int) -> void:
 
 
 func _nuke_all_zombies() -> void:
-	var game_scene := get_tree().current_scene
+	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Zombies"):
-		for zombie in game_scene.get_node("Zombies").get_children():
+		for zombie: Node in game_scene.get_node("Zombies").get_children():
 			if zombie.has_method("die"):
 				zombie.die()
 				# Award 400 points to all players
-				for player in players.values():
-					player.add_points(400)
+				for player: Node in players.values():
+					if player.has_method("add_points"):
+						player.add_points(400)
 
 
 func _repair_all_barriers() -> void:
-	var game_scene := get_tree().current_scene
+	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Barriers"):
-		for barrier in game_scene.get_node("Barriers").get_children():
+		for barrier: Node in game_scene.get_node("Barriers").get_children():
 			if barrier.has_method("repair_fully"):
 				barrier.repair_fully()
 		# Award 200 points to all players
-		for player in players.values():
-			player.add_points(200)
+		for player: Node in players.values():
+			if player.has_method("add_points"):
+				player.add_points(200)
 
 
 func is_power_up_active(power_up_type: String) -> bool:
 	if power_up_type not in active_power_ups:
 		return false
 
-	var current_time := Time.get_ticks_msec() / 1000.0
+	var current_time: float = Time.get_ticks_msec() / 1000.0
 	return current_time < active_power_ups[power_up_type]
 
 
@@ -272,24 +275,24 @@ func unregister_player(player_id: int) -> void:
 
 
 func get_alive_players() -> Array:
-	var alive := []
-	for player in players.values():
-		if player and not player.is_downed:
+	var alive: Array = []
+	for player: Node in players.values():
+		if player and not player.get("is_downed"):
 			alive.append(player)
 	return alive
 
 
 func get_downed_players() -> Array:
-	var downed := []
-	for player in players.values():
-		if player and player.is_downed:
+	var downed: Array = []
+	for player: Node in players.values():
+		if player and player.get("is_downed"):
 			downed.append(player)
 	return downed
 
 
 func all_players_downed() -> bool:
-	for player in players.values():
-		if player and not player.is_downed:
+	for player: Node in players.values():
+		if player and not player.get("is_downed"):
 			return false
 	return players.size() > 0
 
