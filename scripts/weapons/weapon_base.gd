@@ -2,6 +2,8 @@ extends Node3D
 class_name Weapon
 ## Base weapon class with shooting, reloading, and damage
 
+const WeaponRegistryClass = preload("res://scripts/weapons/weapon_registry.gd")
+
 signal ammo_changed(current_ammo: int, reserve_ammo: int)
 signal reloading_started
 signal reloading_finished
@@ -60,7 +62,7 @@ func _ready() -> void:
 
 
 func _load_weapon_data() -> void:
-	var data := WeaponRegistry.get_weapon_data(weapon_id)
+	var data: WeaponData = WeaponRegistryClass.get_weapon_data(weapon_id)
 	if not data:
 		push_warning("Weapon data not found for: %s" % weapon_id)
 		return
@@ -193,11 +195,11 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 	if result:
 		var hit_point: Vector3 = result.position
 		var hit_normal: Vector3 = result.normal
-		var collider := result.collider
+		var collider: Object = result.collider
 
 		# Check if headshot
 		var is_headshot := false
-		if collider.get_parent() and collider.get_parent().name == "HeadHitbox":
+		if collider and collider.has_method("get_parent") and collider.get_parent() and collider.get_parent().name == "HeadHitbox":
 			is_headshot = true
 
 		# Calculate final damage
@@ -329,7 +331,7 @@ func pack_a_punch() -> void:
 	is_pack_a_punched = true
 
 	# Update weapon name
-	var data := WeaponRegistry.get_weapon_data(weapon_id)
+	var data: WeaponData = WeaponRegistryClass.get_weapon_data(weapon_id)
 	if data and data.pap_name != "":
 		display_name = data.pap_name
 

@@ -112,15 +112,18 @@ func _setup_wave_manager() -> void:
 
 
 func _on_all_players_loaded() -> void:
+	print("All players loaded, is_server: ", multiplayer.is_server())
 	if multiplayer.is_server():
 		_spawn_all_players()
 
 
 func _spawn_all_players() -> void:
 	spawn_index = 0
+	print("Spawning all players, count: ", NetworkManager.connected_players.size())
 
-	for peer_id in NetworkManager.connected_players:
+	for peer_id: int in NetworkManager.connected_players:
 		var spawn_pos := _get_next_spawn_position()
+		print("Spawning player %d at %s" % [peer_id, spawn_pos])
 		NetworkManager.spawn_player(peer_id, spawn_pos)
 
 

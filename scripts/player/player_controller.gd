@@ -70,6 +70,8 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 
 
 func _ready() -> void:
+	print("=== PLAYER _ready() called, authority: ", is_multiplayer_authority(), " ===")
+
 	# Set up based on authority
 	if is_multiplayer_authority():
 		camera.current = true
@@ -234,6 +236,10 @@ func get_current_weapon() -> Node:
 
 func _give_starting_weapon() -> void:
 	# Give M1911 pistol
+	print("Player _give_starting_weapon called, weapon_holder: ", weapon_holder)
+	if not weapon_holder:
+		push_error("weapon_holder is null!")
+		return
 	give_weapon("m1911")
 
 
