@@ -27,3 +27,11 @@ Thumbs.db
 .idea/
 *.code-workspace
 .vscode/
+
+# Large asset files (download separately)
+assets/tremulous/models/aliens/*/
+assets/tremulous/models/players/*/
+assets/tremulous/maps/*.bsp
+*.iqe
+*.blend
+*.blend1
