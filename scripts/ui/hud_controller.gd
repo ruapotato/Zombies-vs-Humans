@@ -79,7 +79,7 @@ func _connect_player_signals() -> void:
 	local_player.revived.connect(_on_player_revived)
 
 	# Connect weapon ammo signal
-	var weapon := local_player.get_current_weapon()
+	var weapon: Node = local_player.get_current_weapon()
 	if weapon:
 		weapon.ammo_changed.connect(_on_ammo_changed)
 

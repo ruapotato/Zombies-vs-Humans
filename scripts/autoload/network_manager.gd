@@ -235,7 +235,11 @@ func _load_game(_map_name: String) -> void:
 	await get_tree().process_frame
 
 	# Notify server we're loaded
-	rpc_id(1, "_player_loaded")
+	if multiplayer.is_server():
+		# Server calls directly (can't RPC to self)
+		_on_player_loaded(1)
+	else:
+		rpc_id(1, "_player_loaded")
 
 
 @rpc("any_peer", "reliable")
@@ -245,12 +249,16 @@ func _player_loaded() -> void:
 	if not multiplayer.is_server():
 		return
 
-	players_loaded[sender_id] = true
+	_on_player_loaded(sender_id)
+
+
+func _on_player_loaded(loaded_peer_id: int) -> void:
+	players_loaded[loaded_peer_id] = true
 
 	# Check if all players are loaded
 	var all_loaded: bool = true
-	for peer_id: int in connected_players:
-		if not players_loaded.get(peer_id, false):
+	for pid: int in connected_players:
+		if not players_loaded.get(pid, false):
 			all_loaded = false
 			break
 

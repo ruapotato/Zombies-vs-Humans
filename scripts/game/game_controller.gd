@@ -60,12 +60,12 @@ func _collect_spawn_points() -> void:
 
 
 func _load_map() -> void:
-	var map_name := NetworkManager.server_info.get("map", "nacht")
-	var map_scene_path := MapManager.get_map_scene_path(map_name)
+	var map_name: String = str(NetworkManager.server_info.get("map", "nacht"))
+	var map_scene_path: String = MapManager.get_map_scene_path(map_name)
 
 	if ResourceLoader.exists(map_scene_path):
-		var map_scene := load(map_scene_path)
-		var map_instance := map_scene.instantiate()
+		var map_scene: PackedScene = load(map_scene_path) as PackedScene
+		var map_instance: Node3D = map_scene.instantiate() as Node3D
 		map_container.add_child(map_instance)
 
 		# Update spawn points from map
