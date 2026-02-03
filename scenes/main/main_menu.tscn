@@ -1,0 +1,204 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfqn5r6vy0w8q"]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_main_menu"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.08, 0.12, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "ZOMBIES VS HUMANS"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "Survive the Horde"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="HostButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "HOST GAME"
+
+[node name="JoinButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "JOIN GAME"
+
+[node name="OptionsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "OPTIONS"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "QUIT"
+
+[node name="JoinDialog" type="Window" parent="."]
+title = "Join Game"
+initial_position = 2
+size = Vector2i(400, 200)
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="JoinDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="NameLabel" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+text = "Your Name:"
+
+[node name="NameInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Player"
+max_length = 20
+
+[node name="IPLabel" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+text = "Server IP:"
+
+[node name="IPInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+text = "127.0.0.1"
+placeholder_text = "127.0.0.1"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="ConnectButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "CONNECT"
+
+[node name="CancelButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "CANCEL"
+
+[node name="HostDialog" type="Window" parent="."]
+title = "Host Game"
+initial_position = 2
+size = Vector2i(400, 200)
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HostDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="NameLabel" type="Label" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+text = "Your Name:"
+
+[node name="NameInput" type="LineEdit" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Host"
+max_length = 20
+
+[node name="PortLabel" type="Label" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+text = "Port:"
+
+[node name="PortInput" type="LineEdit" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+text = "7777"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="StartButton" type="Button" parent="HostDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "HOST"
+
+[node name="CancelButton" type="Button" parent="HostDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "CANCEL"
+
+[node name="Version" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+text = "v0.1.0"
+horizontal_alignment = 2
+
+[connection signal="pressed" from="VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/JoinButton" to="." method="_on_join_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+[connection signal="close_requested" from="JoinDialog" to="." method="_on_join_dialog_close_requested"]
+[connection signal="pressed" from="JoinDialog/VBoxContainer/HBoxContainer/ConnectButton" to="." method="_on_connect_button_pressed"]
+[connection signal="pressed" from="JoinDialog/VBoxContainer/HBoxContainer/CancelButton" to="." method="_on_join_cancel_pressed"]
+[connection signal="close_requested" from="HostDialog" to="." method="_on_host_dialog_close_requested"]
+[connection signal="pressed" from="HostDialog/VBoxContainer/HBoxContainer/StartButton" to="." method="_on_start_host_pressed"]
+[connection signal="pressed" from="HostDialog/VBoxContainer/HBoxContainer/CancelButton" to="." method="_on_host_cancel_pressed"]
