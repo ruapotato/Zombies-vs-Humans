@@ -18,6 +18,10 @@ enum EnemyState { SPAWNING, IDLE, CHASING, ATTACKING, DYING, DEAD }
 @export var attack_rate: float = 1.0
 @export var point_value: int = 10
 
+# Enemy dimensions for damage calculation
+@export var enemy_height: float = 1.8
+@export var head_position_y: float = 1.6
+
 # Special abilities
 @export var can_pounce: bool = false
 @export var pounce_range: float = 5.0
@@ -257,17 +261,27 @@ func _try_pounce() -> void:
 	is_pouncing = false
 
 
-func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false) -> void:
+func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, hit_position: Vector3 = Vector3.ZERO) -> void:
 	if state == EnemyState.DYING or state == EnemyState.DEAD:
 		return
 
-	health -= amount
+	var final_damage := amount
+
+	# Headshots are instant kills
+	if is_headshot:
+		final_damage = max_health  # Instant kill
+	else:
+		# Distance-based damage calculation for body shots
+		# Minimum 2 hits to kill, maximum 4 hits based on distance from head
+		final_damage = _calculate_distance_based_damage(amount, hit_position)
+
+	health -= final_damage
 
 	last_hit_was_headshot = is_headshot
 	if attacker and attacker.has_method("get") and "player_id" in attacker:
 		last_attacker_id = attacker.player_id
 
-	damaged.emit(amount, is_headshot)
+	damaged.emit(final_damage, is_headshot)
 	AudioManager.play_sound_3d("zombie_hurt", global_position, -5.0)
 
 	# Sync damage to clients
@@ -275,6 +289,41 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false) 
 
 	if health <= 0:
 		die()
+
+
+func _calculate_distance_based_damage(base_amount: int, hit_position: Vector3) -> int:
+	# If no hit position provided, use default damage
+	if hit_position == Vector3.ZERO:
+		return base_amount
+
+	# Calculate the relative Y position of the hit on the enemy
+	# Enemy's feet are at global_position.y, head is at global_position.y + head_position_y
+	var enemy_feet_y := global_position.y
+	var enemy_head_y := global_position.y + head_position_y
+
+	# Calculate how far the hit is from the head (0 = at head, 1 = at feet)
+	var hit_relative_y := hit_position.y
+	var distance_from_head := enemy_head_y - hit_relative_y
+
+	# Clamp to enemy body range
+	distance_from_head = clampf(distance_from_head, 0.0, enemy_height)
+
+	# Normalize distance (0 = head, 1 = feet)
+	var normalized_distance := distance_from_head / enemy_height
+
+	# Calculate damage multiplier
+	# At head (0): multiplier = 0.5 (2 hits to kill = max_health / 2 per hit)
+	# At feet (1): multiplier = 0.25 (4 hits to kill = max_health / 4 per hit)
+	# Linear interpolation between these values
+	var min_multiplier := 0.25  # 4 hits to kill
+	var max_multiplier := 0.5   # 2 hits to kill
+	var damage_multiplier := lerpf(max_multiplier, min_multiplier, normalized_distance)
+
+	# Calculate final damage based on max_health
+	# This ensures consistent hit-to-kill regardless of base_damage
+	var final_damage := int(max_health * damage_multiplier)
+
+	return max(final_damage, 1)  # Ensure at least 1 damage
 
 
 @rpc("authority", "call_remote", "reliable")

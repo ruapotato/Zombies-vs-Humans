@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3 uid="uid://dm9p3r7k4n2xy"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_headshot"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_headshot"]
+transparency = 1
+albedo_color = Color(1.0, 0.2, 0.1, 0.9)
+emission_enabled = true
+emission = Color(1.0, 0.3, 0.0, 1.0)
+emission_energy_multiplier = 5.0
+
+[sub_resource type="GDScript" id="GDScript_headshot"]
+script/source = "extends Node3D
+## Dramatic expanding sphere effect for headshots
+
+func _ready() -> void:
+	var mesh: MeshInstance3D = $Mesh
+	var material: StandardMaterial3D = mesh.get_surface_override_material(0)
+
+	# Start small
+	mesh.scale = Vector3(0.1, 0.1, 0.1)
+
+	# Create tween for expansion and fade
+	var tween := create_tween()
+	tween.set_parallel(true)
+
+	# Expand from 0.1 to 0.5 scale
+	tween.tween_property(mesh, \"scale\", Vector3(0.5, 0.5, 0.5), 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+
+	# Fade out the material
+	tween.tween_property(material, \"albedo_color:a\", 0.0, 0.4).set_ease(Tween.EASE_IN)
+	tween.tween_property(material, \"emission_energy_multiplier\", 0.0, 0.4)
+
+	# Clean up after animation
+	tween.chain().tween_callback(queue_free)
+"
+
+[node name="HeadshotEffect" type="Node3D"]
+script = SubResource("GDScript_headshot")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_headshot")
+surface_material_override/0 = SubResource("StandardMaterial3D_headshot")

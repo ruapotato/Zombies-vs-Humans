@@ -35,3 +35,4 @@ assets/tremulous/maps/*.bsp
 *.iqe
 *.blend
 *.blend1
+pyenv/

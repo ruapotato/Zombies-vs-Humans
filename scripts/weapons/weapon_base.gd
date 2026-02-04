@@ -45,6 +45,10 @@ var is_pack_a_punched: bool = false
 var pap_damage_multiplier: float = 2.0
 var pap_special_effect: String = ""
 
+# Hit effect scenes
+var hit_effect_scene: PackedScene = preload("res://scenes/effects/hit_effect.tscn")
+var headshot_effect_scene: PackedScene = preload("res://scenes/effects/headshot_effect.tscn")
+
 # Components
 @onready var model: MeshInstance3D = $Model
 @onready var muzzle_point: Marker3D = $MuzzlePoint
@@ -201,19 +205,24 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 		if collider and collider.has_method("get_parent") and collider.get_parent() and collider.get_parent().name == "HeadHitbox":
 			is_headshot = true
 
-		# Calculate final damage
+		# Find the enemy node for damage calculation
+		var enemy_node: Node = null
+		if collider.has_method("take_damage"):
+			enemy_node = collider
+		elif collider.get_parent() and collider.get_parent().has_method("take_damage"):
+			enemy_node = collider.get_parent()
+
+		# Calculate final damage - pass hit_point for distance-based damage
 		var final_damage := damage
 		if is_headshot:
 			final_damage = int(damage * headshot_multiplier)
 
-		# Apply damage
-		if collider.has_method("take_damage"):
-			collider.take_damage(final_damage, owner_player, is_headshot)
-		elif collider.get_parent() and collider.get_parent().has_method("take_damage"):
-			collider.get_parent().take_damage(final_damage, owner_player, is_headshot)
+		# Apply damage with hit position for distance-based calculation
+		if enemy_node:
+			enemy_node.take_damage(final_damage, owner_player, is_headshot, hit_point)
 
-		# Spawn hit effect
-		_spawn_hit_effect(hit_point, hit_normal)
+		# Spawn appropriate hit effect
+		_spawn_hit_effect(hit_point, hit_normal, is_headshot)
 
 
 func _play_fire_effects() -> void:
@@ -244,9 +253,20 @@ func _apply_recoil() -> void:
 		camera_mount.rotation.x = clamp(camera_mount.rotation.x, deg_to_rad(-89), deg_to_rad(89))
 
 
-func _spawn_hit_effect(position: Vector3, normal: Vector3) -> void:
-	# Could instantiate particle effect here
-	pass
+func _spawn_hit_effect(hit_position: Vector3, normal: Vector3, is_headshot: bool = false) -> void:
+	var effect: Node3D
+	if is_headshot:
+		effect = headshot_effect_scene.instantiate()
+	else:
+		effect = hit_effect_scene.instantiate()
+
+	# Add to scene tree
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = hit_position
+
+	# Orient effect along hit normal (optional, looks better for sparks)
+	if normal != Vector3.ZERO:
+		effect.look_at(hit_position + normal, Vector3.UP)
 
 
 @rpc("any_peer", "call_remote", "unreliable")
