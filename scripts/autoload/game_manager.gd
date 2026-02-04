@@ -104,7 +104,7 @@ func _server_start_wave_spawning() -> void:
 	pass
 
 
-func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
+func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool, hit_position: Vector3 = Vector3.ZERO) -> void:
 	if not multiplayer.is_server():
 		return
 
@@ -112,12 +112,10 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 	zombies_killed_this_round += 1
 	total_zombies_killed += 1
 
-	# Calculate points
-	var base_points: int = zombie.get_meta("point_value", 10)
-	var points: int = base_points
+	# Calculate points - headshot = 50, body = 10
+	var points: int = 50 if is_headshot else 10
 
 	if is_headshot:
-		points += 50
 		if killer_id in player_stats:
 			player_stats[killer_id]["headshots"] += 1
 
@@ -132,6 +130,10 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 	# Award points to player
 	if killer_id in players:
 		players[killer_id].add_points(points)
+
+	# Spawn 3D point popup at hit location
+	var popup_pos := hit_position if hit_position != Vector3.ZERO else zombie.global_position + Vector3(0, 1.5, 0)
+	rpc("_spawn_point_popup", popup_pos, points, is_headshot)
 
 	zombie_killed.emit(zombie, killer_id, points)
 
@@ -182,6 +184,31 @@ func _spawn_power_up_at(position: Vector3, power_up_type: String) -> void:
 		game_scene.get_node("PowerUps").add_child(power_up)
 
 	power_up_spawned.emit(power_up)
+
+
+@rpc("authority", "call_local", "reliable")
+func _spawn_point_popup(position: Vector3, points: int, is_headshot: bool) -> void:
+	# Create a 3D label to show points
+	var label := Label3D.new()
+	label.text = "+%d" % points
+	label.font_size = 48 if is_headshot else 32
+	label.modulate = Color.YELLOW if is_headshot else Color.WHITE
+	label.outline_size = 8
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true  # Always visible
+	label.global_position = position
+
+	var game_scene: Node = get_tree().current_scene
+	if game_scene:
+		game_scene.add_child(label)
+
+	# Animate: float up and fade out
+	var tween := label.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "global_position", position + Vector3(0, 1.5, 0), 0.8)
+	tween.tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
+	tween.set_parallel(false)
+	tween.tween_callback(label.queue_free)
 
 
 func collect_power_up(power_up_type: String, collector_id: int) -> void:

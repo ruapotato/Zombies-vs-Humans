@@ -42,6 +42,7 @@ var players_in_attack_range: Array[Node3D] = []
 var can_attack: bool = true
 var last_attacker_id: int = 0
 var last_hit_was_headshot: bool = false
+var last_hit_position: Vector3 = Vector3.ZERO
 
 var pounce_timer: float = 0.0
 var is_pouncing: bool = false
@@ -440,6 +441,7 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 	health -= final_damage
 
 	last_hit_was_headshot = is_headshot
+	last_hit_position = hit_position if hit_position != Vector3.ZERO else global_position + Vector3(0, 1, 0)
 	if attacker and attacker.has_method("get") and "player_id" in attacker:
 		last_attacker_id = attacker.player_id
 
@@ -511,7 +513,7 @@ func die() -> void:
 
 	# Notify game manager
 	if multiplayer.is_server():
-		GameManager.on_zombie_killed(self, last_attacker_id, last_hit_was_headshot)
+		GameManager.on_zombie_killed(self, last_attacker_id, last_hit_was_headshot, last_hit_position)
 
 	died.emit(self, last_attacker_id, last_hit_was_headshot)
 
