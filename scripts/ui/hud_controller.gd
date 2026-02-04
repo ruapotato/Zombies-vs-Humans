@@ -11,6 +11,7 @@ extends Control
 @onready var interaction_prompt: Label = $Center/InteractionPrompt
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var announcement_label: Label = $AnnouncementLabel
+@onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var downed_overlay: ColorRect = $DownedOverlay
 @onready var bleedout_timer_label: Label = $DownedOverlay/BleedoutTimer
 
@@ -78,6 +79,10 @@ func _connect_player_signals() -> void:
 	local_player.downed.connect(_on_player_downed)
 	local_player.revived.connect(_on_player_revived)
 
+	# Connect damage intensity signal for CoD-style red screen
+	if local_player.has_signal("damage_intensity_changed"):
+		local_player.damage_intensity_changed.connect(_on_damage_intensity_changed)
+
 	# Connect weapon ammo signal
 	var weapon: Node = local_player.get_current_weapon()
 	if weapon:
@@ -115,6 +120,12 @@ func _on_health_changed(new_health: int, max_health: int) -> void:
 		health_bar.modulate = Color.YELLOW
 	else:
 		health_bar.modulate = Color.RED
+
+
+func _on_damage_intensity_changed(intensity: float) -> void:
+	# Update red screen overlay - intensity 0-1 maps to alpha 0-0.6
+	if damage_overlay:
+		damage_overlay.color.a = intensity * 0.6
 
 
 func _on_points_changed(new_points: int) -> void:

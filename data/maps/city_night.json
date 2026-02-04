@@ -1,0 +1,47 @@
+{
+	"name": "city_night",
+	"display_name": "City at Night",
+	"description": "An abandoned city street at night. More space to maneuver, but zombies come from all directions.",
+	"author": "Zombies vs Humans Team",
+	"max_players": 4,
+	"difficulty": 3,
+	"spawn_points": [
+		{"x": 0, "y": 1, "z": 0},
+		{"x": 3, "y": 1, "z": 0},
+		{"x": -3, "y": 1, "z": 0},
+		{"x": 0, "y": 1, "z": 3}
+	],
+	"zombie_spawn_points": [
+		{"x": -35, "y": 0, "z": -35},
+		{"x": 35, "y": 0, "z": -35},
+		{"x": -35, "y": 0, "z": 35},
+		{"x": 35, "y": 0, "z": 35},
+		{"x": 0, "y": 0, "z": -35},
+		{"x": 0, "y": 0, "z": 35},
+		{"x": -35, "y": 0, "z": 0},
+		{"x": 35, "y": 0, "z": 0}
+	],
+	"perk_machine_locations": {
+		"juggernog": {"x": -12, "y": 0, "z": -12},
+		"speed_cola": {"x": 12, "y": 0, "z": -12},
+		"double_tap": {"x": -12, "y": 0, "z": 12},
+		"quick_revive": {"x": 12, "y": 0, "z": 12}
+	},
+	"mystery_box_locations": [
+		{"x": 10, "y": 0, "z": -10},
+		{"x": -10, "y": 0, "z": 10}
+	],
+	"pack_a_punch_location": {"x": 0, "y": 0, "z": 25},
+	"power_switch_location": {"x": 0, "y": 1, "z": -25},
+	"wall_weapons": [
+		{"weapon_id": "m14", "position": {"x": -20, "y": 1.5, "z": -20}, "rotation": 0},
+		{"weapon_id": "olympia", "position": {"x": 20, "y": 1.5, "z": -20}, "rotation": 0},
+		{"weapon_id": "mp5", "position": {"x": -20, "y": 1.5, "z": 20}, "rotation": 0},
+		{"weapon_id": "ak47", "position": {"x": 20, "y": 1.5, "z": 20}, "rotation": 0}
+	],
+	"doors": [],
+	"barriers": [],
+	"nav_mesh_path": "",
+	"ambient_sound": "ambient_city",
+	"preview_image": "res://assets/maps/city_night_preview.png"
+}

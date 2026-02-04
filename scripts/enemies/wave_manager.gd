@@ -20,13 +20,13 @@ var enemy_scenes: Dictionary = {
 	"tyrant": preload("res://scenes/enemies/tyrant.tscn")
 }
 
-# Enemy type configurations
+# Enemy type configurations (speeds reduced ~30% for better gameplay)
 var enemy_configs: Dictionary = {
 	"dretch": {
 		"display_name": "Dretch",
 		"base_health": 30,
 		"base_damage": 20,
-		"base_speed": 5.0,
+		"base_speed": 3.5,
 		"attack_rate": 0.8,
 		"point_value": 10,
 		"color": Color(0.3, 0.5, 0.2),
@@ -36,7 +36,7 @@ var enemy_configs: Dictionary = {
 		"display_name": "Basilisk",
 		"base_health": 75,
 		"base_damage": 40,
-		"base_speed": 5.5,
+		"base_speed": 4.0,
 		"attack_rate": 1.0,
 		"point_value": 30,
 		"can_pounce": true,
@@ -47,7 +47,7 @@ var enemy_configs: Dictionary = {
 		"display_name": "Marauder",
 		"base_health": 100,
 		"base_damage": 50,
-		"base_speed": 4.0,
+		"base_speed": 3.0,
 		"attack_rate": 1.2,
 		"point_value": 50,
 		"color": Color(0.5, 0.4, 0.3),
@@ -57,7 +57,7 @@ var enemy_configs: Dictionary = {
 		"display_name": "Dragoon",
 		"base_health": 150,
 		"base_damage": 75,
-		"base_speed": 4.5,
+		"base_speed": 3.2,
 		"attack_rate": 1.5,
 		"point_value": 70,
 		"can_pounce": true,
@@ -69,7 +69,7 @@ var enemy_configs: Dictionary = {
 		"display_name": "Tyrant",
 		"base_health": 500,
 		"base_damage": 150,
-		"base_speed": 2.5,
+		"base_speed": 2.0,
 		"attack_rate": 2.0,
 		"point_value": 200,
 		"color": Color(0.3, 0.2, 0.2),

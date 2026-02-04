@@ -9,6 +9,7 @@ signal downed()
 signal revived()
 signal perk_acquired(perk_name: String)
 signal perk_lost(perk_name: String)
+signal damage_intensity_changed(intensity: float)
 
 # Networked properties
 @export var player_id: int = 1
@@ -29,11 +30,14 @@ var is_sprinting := false
 var is_crouching := false
 var can_sprint := true
 
-# Health
+# Health (CoD-style regenerating health)
 const BASE_HEALTH := 100
 const JUGGERNOG_HEALTH := 250
 const BLEEDOUT_TIME := 45.0
 const REVIVE_TIME := 4.0
+const REGEN_DELAY := 4.0  # Seconds before health starts regenerating
+const REGEN_RATE := 25.0  # Health per second when regenerating
+const HITS_TO_DOWN := 4  # How many hits at full damage before going down
 
 var health: int = BASE_HEALTH
 var max_health: int = BASE_HEALTH
@@ -41,6 +45,10 @@ var is_downed := false
 var bleedout_timer := 0.0
 var revive_progress := 0.0
 var reviver: Player = null
+
+# Damage tracking for CoD-style screen effect
+var damage_intensity := 0.0  # 0-1, how red the screen is
+var time_since_hit := 999.0  # Seconds since last damage
 
 # Points
 var points: int = 500  # Starting points
@@ -252,6 +260,9 @@ func _physics_process(delta: float) -> void:
 	if is_downed:
 		_process_downed(delta)
 		return
+
+	# Process health regeneration (CoD-style)
+	_process_health_regen(delta)
 
 	# Handle movement input
 	_handle_movement_input(delta)
@@ -474,11 +485,33 @@ func replace_weapon(weapon_id: String) -> void:
 	weapon_changed.emit(weapon)
 
 
+func _process_health_regen(delta: float) -> void:
+	time_since_hit += delta
+
+	# Fade out damage intensity over time
+	if time_since_hit > 1.0:
+		var fade_speed := 1.5 if time_since_hit > REGEN_DELAY else 0.5
+		damage_intensity = max(0.0, damage_intensity - delta * fade_speed)
+		damage_intensity_changed.emit(damage_intensity)
+
+	# Regenerate health after delay
+	if time_since_hit >= REGEN_DELAY and health < max_health:
+		health = min(health + int(REGEN_RATE * delta), max_health)
+		health_changed.emit(health, max_health)
+
+
 func take_damage(amount: int, _attacker: Node = null) -> void:
 	if is_downed:
 		return
 
 	health -= amount
+	time_since_hit = 0.0
+
+	# Increase damage intensity based on how hurt we are
+	var damage_fraction := float(amount) / float(max_health / HITS_TO_DOWN)
+	damage_intensity = min(1.0, damage_intensity + damage_fraction)
+	damage_intensity_changed.emit(damage_intensity)
+
 	health_changed.emit(health, max_health)
 
 	AudioManager.play_sound_3d("player_hurt", global_position)
