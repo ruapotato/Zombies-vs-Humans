@@ -1,11 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://walker_enemy_scene"]
+[gd_scene load_steps=6 format=3 uid="uid://qbjyoss6wrhb"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
-[ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
+[ext_resource type="Script" uid="uid://d21btkg151mye" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://ys7jnr873kig" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.25
-height = 1.8
+height = 1.21
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
 radius = 0.2
@@ -23,7 +23,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="Model" parent="." instance=ExtResource("2_model")]
-transform = Transform3D(-1.0, 0, 0, 0, 1.0, 0, 0, 0, -1.0, 0, 0, 0)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
@@ -37,7 +37,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="BodyHitbox" type="CollisionShape3D" parent="HitboxArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5750545, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="HeadHitbox" type="Area3D" parent="."]
@@ -45,7 +45,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3450103, 0)
 shape = SubResource("SphereShape3D_head")
 
 [node name="AttackArea" type="Area3D" parent="."]
@@ -57,7 +57,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.5)
 shape = SubResource("SphereShape3D_attack")
 
 [node name="AttackTimer" type="Timer" parent="."]
-wait_time = 1.0
 one_shot = true
 
 [node name="PathUpdateTimer" type="Timer" parent="."]

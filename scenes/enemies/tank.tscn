@@ -1,11 +1,11 @@
 [gd_scene load_steps=6 format=3 uid="uid://tank_enemy_scene"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
-[ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
+[ext_resource type="Script" uid="uid://d21btkg151mye" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://ys7jnr873kig" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
-height = 2.1
+height = 1.57
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
 radius = 0.25
@@ -19,7 +19,7 @@ collision_mask = 7
 script = ExtResource("1_enemy")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.17, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="Model" parent="." instance=ExtResource("2_model")]
@@ -37,7 +37,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="BodyHitbox" type="CollisionShape3D" parent="HitboxArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="HeadHitbox" type="Area3D" parent="."]
@@ -45,7 +45,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 shape = SubResource("SphereShape3D_head")
 
 [node name="AttackArea" type="Area3D" parent="."]
@@ -53,7 +53,7 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="AttackShape" type="CollisionShape3D" parent="AttackArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.17, 0.6)
 shape = SubResource("SphereShape3D_attack")
 
 [node name="AttackTimer" type="Timer" parent="."]
