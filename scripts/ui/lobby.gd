@@ -24,11 +24,15 @@ func _setup_map_list() -> void:
 	map_select.clear()
 
 	var maps := MapManager.get_available_maps()
+	print("Available maps: ", maps.size())
+	for m in maps:
+		print("  - ", m.get("name", "?"), " / ", m.get("display_name", "?"))
 
 	if maps.is_empty():
 		# Add default map
 		map_select.add_item("Nacht der Untoten", 0)
 		map_select.set_item_metadata(0, "nacht")
+		print("No maps found, using default nacht")
 	else:
 		for i in range(maps.size()):
 			var map_data: Dictionary = maps[i]
@@ -126,6 +130,7 @@ func _on_map_selected(index: int) -> void:
 		return
 
 	var map_name: String = map_select.get_item_metadata(index)
+	print("Map selected: index=%d, name=%s" % [index, map_name])
 	NetworkManager.set_server_map(map_name)
 
 

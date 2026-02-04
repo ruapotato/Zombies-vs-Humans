@@ -63,10 +63,16 @@ func _load_map() -> void:
 	var map_name: String = str(NetworkManager.server_info.get("map", "nacht"))
 	var map_scene_path: String = MapManager.get_map_scene_path(map_name)
 
+	print("Loading map: %s from path: %s" % [map_name, map_scene_path])
+	print("ResourceLoader.exists: %s" % ResourceLoader.exists(map_scene_path))
+
 	if ResourceLoader.exists(map_scene_path):
 		var map_scene: PackedScene = load(map_scene_path) as PackedScene
 		var map_instance: Node3D = map_scene.instantiate() as Node3D
 		map_container.add_child(map_instance)
+		print("Map loaded successfully: %s" % map_instance.name)
+	else:
+		push_error("Map not found: %s" % map_scene_path)
 
 		# Update spawn points from map
 		if map_instance.has_node("SpawnPoints"):
