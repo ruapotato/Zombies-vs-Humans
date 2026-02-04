@@ -1,33 +1,33 @@
-[gd_scene load_steps=6 format=3 uid="uid://basilisk_enemy_scene"]
+[gd_scene load_steps=6 format=3 uid="uid://tank_enemy_scene"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
 [ext_resource type="PackedScene" uid="uid://zombie_girl_model" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
-radius = 0.4
-height = 1.6
+radius = 0.35
+height = 2.1
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_head"]
-radius = 0.28
+radius = 0.25
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_attack"]
-radius = 1.3
+radius = 1.5
 
-[node name="Basilisk" type="CharacterBody3D" groups=["enemies"]]
+[node name="Tank" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_enemy")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="Model" parent="." instance=ExtResource("2_model")]
-transform = Transform3D(-1.5, 0, 0, 0, 1.5, 0, 0, 0, -1.5, 0, 0, 0)
+transform = Transform3D(-1.3, 0, 0, 0, 1.3, 0, 0, 0, -1.3, 0, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-path_desired_distance = 0.5
-target_desired_distance = 0.9
+path_desired_distance = 0.6
+target_desired_distance = 1.0
 path_max_distance = 50.0
 avoidance_enabled = true
 radius = 0.45
@@ -37,7 +37,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="BodyHitbox" type="CollisionShape3D" parent="HitboxArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="HeadHitbox" type="Area3D" parent="."]
@@ -45,7 +45,7 @@ collision_layer = 4
 collision_mask = 0
 
 [node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
 shape = SubResource("SphereShape3D_head")
 
 [node name="AttackArea" type="Area3D" parent="."]
@@ -53,11 +53,11 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="AttackShape" type="CollisionShape3D" parent="AttackArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0.6)
 shape = SubResource("SphereShape3D_attack")
 
 [node name="AttackTimer" type="Timer" parent="."]
-wait_time = 1.0
+wait_time = 2.0
 one_shot = true
 
 [node name="PathUpdateTimer" type="Timer" parent="."]

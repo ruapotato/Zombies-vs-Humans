@@ -13,67 +13,66 @@ const MAX_ACTIVE_ZOMBIES := 24
 
 # Enemy scenes - each type has its own distinct model
 var enemy_scenes: Dictionary = {
-	"dretch": preload("res://scenes/enemies/dretch.tscn"),
-	"basilisk": preload("res://scenes/enemies/basilisk.tscn"),
-	"marauder": preload("res://scenes/enemies/marauder.tscn"),
-	"dragoon": preload("res://scenes/enemies/dragoon.tscn"),
-	"tyrant": preload("res://scenes/enemies/tyrant.tscn")
+	"walker": preload("res://scenes/enemies/walker.tscn"),
+	"runner": preload("res://scenes/enemies/runner.tscn"),
+	"brute": preload("res://scenes/enemies/brute.tscn"),
+	"leaper": preload("res://scenes/enemies/leaper.tscn"),
+	"tank": preload("res://scenes/enemies/tank.tscn")
 }
 
-# Enemy type configurations (speeds reduced ~30% for better gameplay)
+# Enemy type configurations
 var enemy_configs: Dictionary = {
-	"dretch": {
-		"display_name": "Dretch",
-		"base_health": 30,
+	"walker": {
+		"display_name": "Walker",
+		"base_health": 50,
 		"base_damage": 20,
-		"base_speed": 3.5,
-		"attack_rate": 0.8,
-		"point_value": 10,
-		"color": Color(0.3, 0.5, 0.2),
-		"scale": Vector3(0.8, 0.8, 0.8)
-	},
-	"basilisk": {
-		"display_name": "Basilisk",
-		"base_health": 75,
-		"base_damage": 40,
-		"base_speed": 4.0,
+		"base_speed": 2.5,
 		"attack_rate": 1.0,
-		"point_value": 30,
-		"can_pounce": true,
-		"color": Color(0.4, 0.3, 0.5),
-		"scale": Vector3(1.0, 0.9, 1.0)
-	},
-	"marauder": {
-		"display_name": "Marauder",
-		"base_health": 100,
-		"base_damage": 50,
-		"base_speed": 3.0,
-		"attack_rate": 1.2,
-		"point_value": 50,
-		"color": Color(0.5, 0.4, 0.3),
+		"point_value": 10,
+		"color": Color(0.4, 0.5, 0.3),
 		"scale": Vector3(1.0, 1.0, 1.0)
 	},
-	"dragoon": {
-		"display_name": "Dragoon",
-		"base_health": 150,
-		"base_damage": 75,
-		"base_speed": 3.2,
-		"attack_rate": 1.5,
-		"point_value": 70,
-		"can_pounce": true,
-		"pounce_range": 8.0,
-		"color": Color(0.6, 0.3, 0.3),
-		"scale": Vector3(1.2, 1.2, 1.2)
+	"runner": {
+		"display_name": "Runner",
+		"base_health": 40,
+		"base_damage": 25,
+		"base_speed": 4.0,
+		"attack_rate": 0.8,
+		"point_value": 20,
+		"color": Color(0.5, 0.4, 0.4),
+		"scale": Vector3(1.0, 1.0, 1.0)
 	},
-	"tyrant": {
-		"display_name": "Tyrant",
+	"brute": {
+		"display_name": "Brute",
+		"base_health": 120,
+		"base_damage": 40,
+		"base_speed": 2.2,
+		"attack_rate": 1.5,
+		"point_value": 50,
+		"color": Color(0.5, 0.4, 0.3),
+		"scale": Vector3(1.1, 1.1, 1.1)
+	},
+	"leaper": {
+		"display_name": "Leaper",
+		"base_health": 60,
+		"base_damage": 35,
+		"base_speed": 3.5,
+		"attack_rate": 1.2,
+		"point_value": 40,
+		"can_pounce": true,
+		"pounce_range": 6.0,
+		"color": Color(0.6, 0.3, 0.3),
+		"scale": Vector3(1.0, 1.0, 1.0)
+	},
+	"tank": {
+		"display_name": "Tank",
 		"base_health": 500,
-		"base_damage": 150,
-		"base_speed": 2.0,
+		"base_damage": 80,
+		"base_speed": 1.8,
 		"attack_rate": 2.0,
 		"point_value": 200,
-		"color": Color(0.3, 0.2, 0.2),
-		"scale": Vector3(1.8, 2.0, 1.8)
+		"color": Color(0.3, 0.25, 0.25),
+		"scale": Vector3(1.3, 1.3, 1.3)
 	}
 }
 
@@ -206,60 +205,60 @@ func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 func _get_enemy_type_for_spawn() -> String:
 	# Special rounds
 	if GameManager.is_special_round():
-		# Swarm round - all dretch
-		return "dretch"
+		# Swarm round - all walkers
+		return "walker"
 
-	# Tyrant round - spawn one tyrant
+	# Tank round - spawn one tank
 	if GameManager.is_tyrant_round() and zombies_spawned == 0:
-		AudioManager.play_sound_3d("tyrant_roar", Vector3.ZERO)
-		return "tyrant"
+		AudioManager.play_sound_3d("tank_roar", Vector3.ZERO)
+		return "tank"
 
 	# Normal wave composition based on round
 	var roll := randf()
 
 	if current_wave < 3:
-		# Early rounds - mostly dretch
-		return "dretch"
+		# Early rounds - mostly walkers
+		return "walker"
 
 	elif current_wave < 6:
-		# Mid-early - dretch and basilisk
+		# Mid-early - walkers and runners
 		if roll < 0.7:
-			return "dretch"
+			return "walker"
 		else:
-			return "basilisk"
+			return "runner"
 
 	elif current_wave < 10:
-		# Mid rounds - add marauder
+		# Mid rounds - add brutes
 		if roll < 0.4:
-			return "dretch"
+			return "walker"
 		elif roll < 0.7:
-			return "basilisk"
+			return "runner"
 		else:
-			return "marauder"
+			return "brute"
 
 	elif current_wave < 15:
-		# Later rounds - add dragoon
+		# Later rounds - add leapers
 		if roll < 0.25:
-			return "dretch"
+			return "walker"
 		elif roll < 0.5:
-			return "basilisk"
+			return "runner"
 		elif roll < 0.75:
-			return "marauder"
+			return "brute"
 		else:
-			return "dragoon"
+			return "leaper"
 
 	else:
-		# High rounds - all types including occasional tyrant
+		# High rounds - all types including occasional tank
 		if roll < 0.15:
-			return "dretch"
+			return "walker"
 		elif roll < 0.35:
-			return "basilisk"
+			return "runner"
 		elif roll < 0.55:
-			return "marauder"
+			return "brute"
 		elif roll < 0.85:
-			return "dragoon"
+			return "leaper"
 		else:
-			return "tyrant"
+			return "tank"
 
 
 func get_active_zombie_count() -> int:
