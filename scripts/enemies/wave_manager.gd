@@ -164,11 +164,11 @@ func _spawn_zombie() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
-	var scene: PackedScene = enemy_scenes.get(enemy_type, enemy_scenes["dretch"])
+	var scene: PackedScene = enemy_scenes.get(enemy_type, enemy_scenes["walker"])
 	var zombie: CharacterBody3D = scene.instantiate() as CharacterBody3D
 
 	# Apply configuration
-	var config: Dictionary = enemy_configs.get(enemy_type, enemy_configs["dretch"])
+	var config: Dictionary = enemy_configs.get(enemy_type, enemy_configs["walker"])
 
 	zombie.enemy_type = enemy_type
 	zombie.display_name = config.get("display_name", "Zombie")

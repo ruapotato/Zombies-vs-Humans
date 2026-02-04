@@ -135,12 +135,9 @@ func _on_weapon_changed(weapon: Node) -> void:
 
 	weapon_name.text = weapon.display_name
 
-	# Disconnect old weapon and connect new
-	for conn in weapon_name.get_incoming_connections():
-		if conn.signal.get_name() == "ammo_changed":
-			conn.signal.disconnect(conn.callable)
-
-	weapon.ammo_changed.connect(_on_ammo_changed)
+	# Connect ammo signal if not already connected
+	if not weapon.ammo_changed.is_connected(_on_ammo_changed):
+		weapon.ammo_changed.connect(_on_ammo_changed)
 	_on_ammo_changed(weapon.current_ammo, weapon.reserve_ammo)
 
 
