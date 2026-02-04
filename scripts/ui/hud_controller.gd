@@ -52,13 +52,15 @@ func _process(_delta: float) -> void:
 	if fps_label:
 		fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
+	# Always update global game state (doesn't need player)
+	_update_zombies_count()
+	_update_active_power_ups()
+
 	if not local_player:
 		_find_local_player()
 		return
 
 	_update_interaction_prompt()
-	_update_zombies_count()
-	_update_active_power_ups()
 	_update_downed_state()
 	_update_minimap()
 

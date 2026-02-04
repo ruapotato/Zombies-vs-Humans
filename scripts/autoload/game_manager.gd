@@ -93,9 +93,6 @@ func start_next_round() -> void:
 	if current_round == 2:
 		zombies_remaining = int(zombies_remaining * 1.8)
 
-	print("=== STARTING ROUND %d ===" % current_round)
-	print("  Players: %d, Zombies: %d" % [player_count, zombies_remaining])
-
 	round_started.emit(current_round)
 
 	if multiplayer.is_server():
@@ -114,8 +111,6 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 	zombies_remaining -= 1
 	zombies_killed_this_round += 1
 	total_zombies_killed += 1
-
-	print("Zombie killed! Remaining: %d, Killed this round: %d" % [zombies_remaining, zombies_killed_this_round])
 
 	# Calculate points
 	var base_points: int = zombie.get_meta("point_value", 10)
@@ -145,7 +140,6 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 
 	# Check for round end
 	if zombies_remaining <= 0:
-		print("All zombies killed! Ending round %d" % current_round)
 		# Round 1 complete - give all players a better weapon for round 2
 		if current_round == 1:
 			_give_round1_reward()
@@ -259,21 +253,16 @@ func is_power_up_active(power_up_type: String) -> bool:
 
 
 func end_round() -> void:
-	print("=== ROUND %d ENDED ===" % current_round)
 	round_ended.emit(current_round)
 
 	# Give all players max ammo between rounds
 	_give_round_end_rewards()
 
 	# Brief delay before next round
-	print("Waiting 5 seconds before next round...")
 	await get_tree().create_timer(5.0).timeout
 
-	print("Timer finished, current_state: %s" % GameState.keys()[current_state])
 	if current_state == GameState.PLAYING:
 		start_next_round()
-	else:
-		print("Not starting next round - state is not PLAYING")
 
 
 func _give_round_end_rewards() -> void:
