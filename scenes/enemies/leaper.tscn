@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://d21btkg151mye" path="res://scripts/enemies/enemy_base.gd" id="1_enemy"]
 [ext_resource type="PackedScene" uid="uid://ys7jnr873kig" path="res://assets/models/enemies/zombie_girl.glb" id="2_model"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_collision"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_leaper_col"]
 radius = 0.25
 height = 1.535
 
@@ -24,7 +24,7 @@ script = ExtResource("1_enemy")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.736, 0)
-shape = SubResource("CapsuleShape3D_collision")
+shape = SubResource("CapsuleShape3D_leaper_col")
 
 [node name="Model" parent="." instance=ExtResource("2_model")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
