@@ -71,8 +71,6 @@ func _load_map() -> void:
 		var map_instance: Node3D = map_scene.instantiate() as Node3D
 		map_container.add_child(map_instance)
 		print("Map loaded successfully: %s" % map_instance.name)
-	else:
-		push_error("Map not found: %s" % map_scene_path)
 
 		# Update spawn points from map
 		if map_instance.has_node("SpawnPoints"):
@@ -84,6 +82,8 @@ func _load_map() -> void:
 			for child in map_instance.get_node("ZombieSpawnPoints").get_children():
 				if child is Marker3D:
 					zombie_spawn_positions.append(child.global_position)
+	else:
+		push_error("Map not found: %s" % map_scene_path)
 
 	# Ensure we have default spawn points
 	if player_spawn_positions.is_empty():
