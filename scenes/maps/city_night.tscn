@@ -1568,3 +1568,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -20)
 
 [node name="ShopMachine2" parent="Interactables" instance=ExtResource("shop_machine")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 20)
+
+[node name="PerkSpringHeels" parent="Interactables" instance=ExtResource("perk_machine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, 45)
+perk_name = "spring_heels"

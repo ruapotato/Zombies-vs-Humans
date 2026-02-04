@@ -53,6 +53,12 @@ const PERKS: Dictionary = {
 		"cost": 4000,
 		"color": Color(0.5, 1, 0.5),
 		"description": "Carry 3 weapons"
+	},
+	"spring_heels": {
+		"display_name": "Spring Heels",
+		"cost": 2500,
+		"color": Color(0.3, 1, 1),
+		"description": "Double jump ability"
 	}
 }
 

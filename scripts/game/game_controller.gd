@@ -82,6 +82,10 @@ func _load_map() -> void:
 			for child in map_instance.get_node("ZombieSpawnPoints").get_children():
 				if child is Marker3D:
 					zombie_spawn_positions.append(child.global_position)
+
+		# Spawn interactables from map placeholders
+		if map_instance.has_node("Interactables"):
+			_spawn_interactables_from_map(map_instance.get_node("Interactables"))
 	else:
 		push_error("Map not found: %s" % map_scene_path)
 
@@ -204,3 +208,92 @@ func get_nearest_player_to(position: Vector3) -> Node3D:
 			nearest = player
 
 	return nearest
+
+
+func _spawn_interactables_from_map(interactables_node: Node3D) -> void:
+	# Preload interactable scenes
+	var perk_machine_scene: PackedScene = preload("res://scenes/interactables/perk_machine.tscn")
+	var mystery_box_scene: PackedScene = preload("res://scenes/interactables/mystery_box.tscn")
+	var power_switch_scene: PackedScene = preload("res://scenes/interactables/power_switch.tscn")
+	var wall_weapon_scene: PackedScene = preload("res://scenes/interactables/wall_weapon.tscn")
+	var shop_machine_scene: PackedScene = preload("res://scenes/interactables/shop_machine.tscn")
+
+	for placeholder in interactables_node.get_children():
+		var node_name: String = placeholder.name.to_lower()
+		var spawn_pos: Vector3 = placeholder.global_position
+		var spawn_rot: Vector3 = placeholder.global_rotation
+		var instance: Node3D = null
+
+		if "perk" in node_name:
+			instance = perk_machine_scene.instantiate() as Node3D
+			# Extract perk name from placeholder name (e.g., "PerkJuggernog" -> "juggernog")
+			var perk_name := _extract_perk_name(placeholder.name)
+			if instance.has_method("set") and perk_name:
+				instance.set("perk_name", perk_name)
+
+		elif "mysterybox" in node_name or "mystery_box" in node_name or node_name == "mysterybox":
+			instance = mystery_box_scene.instantiate() as Node3D
+
+		elif "power" in node_name and "switch" in node_name:
+			instance = power_switch_scene.instantiate() as Node3D
+
+		elif "powerswitch" in node_name:
+			instance = power_switch_scene.instantiate() as Node3D
+
+		elif "wallweapon" in node_name or "wall_weapon" in node_name:
+			instance = wall_weapon_scene.instantiate() as Node3D
+			# Extract weapon name from placeholder
+			var weapon_id := _extract_weapon_name(placeholder.name)
+			if instance.has_method("set") and weapon_id:
+				instance.set("weapon_id", weapon_id)
+
+		elif "shop" in node_name:
+			instance = shop_machine_scene.instantiate() as Node3D
+
+		if instance:
+			instance.global_position = spawn_pos
+			instance.global_rotation = spawn_rot
+			interactables_container.add_child(instance)
+			print("Spawned interactable: %s at %s" % [placeholder.name, spawn_pos])
+
+
+func _extract_perk_name(placeholder_name: String) -> String:
+	# Convert "PerkJuggernog" or "Perk_Juggernog" to "juggernog"
+	var name_lower := placeholder_name.to_lower()
+	name_lower = name_lower.replace("perk_", "").replace("perk", "")
+
+	# Map common variations to perk names
+	var perk_map := {
+		"juggernog": "juggernog",
+		"jug": "juggernog",
+		"speedcola": "speed_cola",
+		"speed_cola": "speed_cola",
+		"speed": "speed_cola",
+		"doubletap": "double_tap",
+		"double_tap": "double_tap",
+		"quickrevive": "quick_revive",
+		"quick_revive": "quick_revive",
+		"revive": "quick_revive",
+		"staminup": "stamin_up",
+		"stamin_up": "stamin_up",
+		"stamina": "stamin_up",
+		"phdflopper": "phd_flopper",
+		"phd_flopper": "phd_flopper",
+		"phd": "phd_flopper",
+		"deadshot": "deadshot",
+		"mulekick": "mule_kick",
+		"mule_kick": "mule_kick",
+		"mule": "mule_kick",
+		"springheels": "spring_heels",
+		"spring_heels": "spring_heels",
+		"spring": "spring_heels"
+	}
+
+	return perk_map.get(name_lower, name_lower)
+
+
+func _extract_weapon_name(placeholder_name: String) -> String:
+	# Convert "WallWeaponM14" to "m14"
+	var name_lower := placeholder_name.to_lower()
+	name_lower = name_lower.replace("wallweapon", "").replace("wall_weapon", "").replace("wall", "")
+	return name_lower

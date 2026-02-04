@@ -36,7 +36,7 @@ var is_sprinting := false
 var is_crouching := false
 var is_aiming := false
 var can_sprint := true
-var can_double_jump := true
+var can_double_jump := false  # Requires Spring Heels perk
 var has_double_jumped := false
 
 # Health (CoD-style regenerating health)
@@ -717,6 +717,9 @@ func _apply_perk_effect(perk_name: String) -> void:
 		"stamin_up":
 			can_sprint = true
 
+		"spring_heels":
+			can_double_jump = true
+
 		# Other perks are checked dynamically
 
 
@@ -734,6 +737,9 @@ func _remove_perk_effect(perk_name: String) -> void:
 				var dropped: Node = weapons.pop_back()
 				dropped.queue_free()
 				current_weapon_index = min(current_weapon_index, weapons.size() - 1)
+
+		"spring_heels":
+			can_double_jump = false
 
 
 func clear_perks() -> void:

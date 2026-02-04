@@ -53,6 +53,85 @@ alignment = 2
 layout_mode = 2
 alignment = 2
 
+[node name="Minimap" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -170.0
+offset_top = 110.0
+offset_right = -20.0
+offset_bottom = 260.0
+grow_horizontal = 0
+
+[node name="Background" type="ColorRect" parent="Minimap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 0.8)
+
+[node name="Border" type="ReferenceRect" parent="Minimap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+border_color = Color(0.5, 0.5, 0.6, 1)
+border_width = 2.0
+
+[node name="MapContainer" type="Control" parent="Minimap"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="POIContainer" type="Control" parent="Minimap/MapContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayerMarker" type="ColorRect" parent="Minimap/MapContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.3, 0.8, 1, 1)
+
+[node name="DirectionIndicator" type="ColorRect" parent="Minimap/MapContainer/PlayerMarker"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -2.0
+offset_top = -8.0
+offset_right = 2.0
+grow_horizontal = 2
+color = Color(0.3, 0.8, 1, 1)
+
 [node name="BottomLeft" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 2

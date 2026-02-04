@@ -14,9 +14,14 @@ extends Control
 @onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var downed_overlay: ColorRect = $DownedOverlay
 @onready var bleedout_timer_label: Label = $DownedOverlay/BleedoutTimer
+@onready var minimap_container: Control = $Minimap/MapContainer
+@onready var poi_container: Control = $Minimap/MapContainer/POIContainer
+@onready var player_marker: ColorRect = $Minimap/MapContainer/PlayerMarker
 
 var local_player: Node = null
 var active_power_up_icons: Dictionary = {}
+var minimap_scale: float = 4.0  # pixels per world unit
+var poi_markers: Dictionary = {}  # node -> marker
 
 # Perk icon colors
 const PERK_COLORS: Dictionary = {
@@ -27,7 +32,8 @@ const PERK_COLORS: Dictionary = {
 	"stamin_up": Color(1, 0.8, 0.3),
 	"phd_flopper": Color(0.6, 0.3, 1),
 	"deadshot": Color(0.3, 0.3, 0.3),
-	"mule_kick": Color(0.5, 1, 0.5)
+	"mule_kick": Color(0.5, 1, 0.5),
+	"spring_heels": Color(0.3, 1, 1)
 }
 
 
@@ -54,6 +60,7 @@ func _process(_delta: float) -> void:
 	_update_zombies_count()
 	_update_active_power_ups()
 	_update_downed_state()
+	_update_minimap()
 
 
 func _find_local_player() -> void:
@@ -208,7 +215,8 @@ func _get_perk_display_name(perk_name: String) -> String:
 		"stamin_up": "STAMIN-UP",
 		"phd_flopper": "PHD FLOPPER",
 		"deadshot": "DEADSHOT",
-		"mule_kick": "MULE KICK"
+		"mule_kick": "MULE KICK",
+		"spring_heels": "SPRING HEELS"
 	}
 	return names.get(perk_name, perk_name.to_upper())
 
@@ -327,3 +335,103 @@ func _show_announcement(text: String, color: Color = Color.WHITE) -> void:
 	tween.tween_interval(2.0)
 	tween.tween_property(announcement_label, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(func(): announcement_label.visible = false)
+
+
+func _update_minimap() -> void:
+	if not local_player or not minimap_container:
+		return
+
+	# Update player marker rotation (direction indicator)
+	var player_yaw := local_player.rotation.y
+	player_marker.rotation = -player_yaw
+
+	# Update POI markers relative to player position
+	var player_pos := Vector2(local_player.global_position.x, local_player.global_position.z)
+	var map_center := minimap_container.size / 2.0
+
+	# Initialize POI markers if not done
+	if poi_markers.is_empty():
+		_init_minimap_pois()
+
+	# Update POI positions relative to player
+	for node: Node in poi_markers:
+		if is_instance_valid(node):
+			var marker: Control = poi_markers[node]
+			var poi_pos := Vector2(node.global_position.x, node.global_position.z)
+			var offset := (poi_pos - player_pos) * minimap_scale
+			marker.position = offset
+
+
+func _init_minimap_pois() -> void:
+	# Find all interactables and create markers
+	var interactables := get_tree().get_nodes_in_group("interactables")
+
+	for node: Node in interactables:
+		var marker := _create_poi_marker(node)
+		if marker:
+			poi_container.add_child(marker)
+			poi_markers[node] = marker
+
+
+func _create_poi_marker(node: Node) -> Control:
+	var container := Control.new()
+
+	# Marker dot
+	var dot := ColorRect.new()
+	dot.custom_minimum_size = Vector2(6, 6)
+	dot.size = Vector2(6, 6)
+	dot.position = Vector2(-3, -3)
+	container.add_child(dot)
+
+	# Label
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", 8)
+	label.position = Vector2(5, -6)
+	container.add_child(label)
+
+	# Determine type and color
+	var node_name := node.name.to_lower()
+	var class_name_str := node.get_class()
+
+	if node is PerkMachine or "perk" in node_name:
+		var perk_name_str: String = node.get("perk_name") if node.get("perk_name") else "perk"
+		var perk_color: Color = PERK_COLORS.get(perk_name_str, Color(0.8, 0.3, 0.8))
+		dot.color = perk_color
+		label.text = _get_short_perk_name(perk_name_str)
+		label.modulate = perk_color
+	elif node is ShopMachine or "shop" in node_name:
+		dot.color = Color(0.3, 0.8, 1)
+		label.text = "Shop"
+		label.modulate = Color(0.3, 0.8, 1)
+	elif "mystery" in node_name or "box" in node_name:
+		dot.color = Color(1, 0.8, 0.2)
+		label.text = "Box"
+		label.modulate = Color(1, 0.8, 0.2)
+	elif "power" in node_name:
+		dot.color = Color(1, 1, 0.3)
+		label.text = "Power"
+		label.modulate = Color(1, 1, 0.3)
+	elif "weapon" in node_name or "wall" in node_name:
+		dot.color = Color(0.7, 0.7, 0.7)
+		label.text = "Gun"
+		label.modulate = Color(0.7, 0.7, 0.7)
+	else:
+		dot.color = Color(0.5, 0.5, 0.5)
+		label.text = ""
+
+	return container
+
+
+func _get_short_perk_name(perk_name: String) -> String:
+	var short_names := {
+		"juggernog": "Jug",
+		"speed_cola": "Speed",
+		"double_tap": "DblTap",
+		"quick_revive": "Revive",
+		"stamin_up": "Stam",
+		"phd_flopper": "PhD",
+		"deadshot": "Dead",
+		"mule_kick": "Mule",
+		"spring_heels": "Spring"
+	}
+	return short_names.get(perk_name, perk_name.substr(0, 4))
