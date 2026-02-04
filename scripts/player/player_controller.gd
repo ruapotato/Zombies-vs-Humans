@@ -379,7 +379,7 @@ func _handle_movement_input(delta: float) -> void:
 		is_moving = false
 
 	# Update upper body animation - run arms when sprinting (unless has power-up)
-	var can_run_and_gun := GameManager.is_power_up_active("stamin_up_pro")
+	var can_run_and_gun := GameManager != null and GameManager.is_power_up_active("stamin_up_pro")
 	if is_sprinting and not can_run_and_gun:
 		_set_upper_animation(ANIM_RUN)
 		# Hide weapon while sprinting
@@ -403,7 +403,7 @@ func _handle_weapon_input() -> void:
 		return
 
 	# Shooting (blocked while sprinting unless has power-up)
-	var can_run_and_gun := GameManager.is_power_up_active("stamin_up_pro")
+	var can_run_and_gun := GameManager != null and GameManager.is_power_up_active("stamin_up_pro")
 	if Input.is_action_pressed("shoot"):
 		if (not is_sprinting or can_run_and_gun) and not is_reloading:
 			if current_weapon.has_method("try_shoot"):
