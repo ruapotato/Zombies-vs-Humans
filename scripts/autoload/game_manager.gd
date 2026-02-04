@@ -14,8 +14,8 @@ signal power_up_collected(power_up_type: String, player_id: int)
 enum GameState { MENU, LOBBY, PLAYING, PAUSED, GAME_OVER }
 
 const MAX_PLAYERS := 4
-const BASE_ZOMBIES_PER_ROUND := 6
-const ZOMBIES_PER_PLAYER := 2
+const BASE_ZOMBIES_PER_ROUND := 15
+const ZOMBIES_PER_PLAYER := 5
 const ZOMBIE_HEALTH_MULTIPLIER := 1.1
 const ZOMBIE_DAMAGE_MULTIPLIER := 1.05
 const TYRANT_ROUND_INTERVAL := 5
@@ -83,9 +83,15 @@ func start_next_round() -> void:
 	zombies_killed_this_round = 0
 	round_start_time = Time.get_ticks_msec() / 1000.0
 
-	# Calculate zombies for this round
+	# Calculate zombies for this round (exponential growth)
 	var player_count: int = max(1, players.size())
-	zombies_remaining = BASE_ZOMBIES_PER_ROUND + (current_round * 2) + (player_count * ZOMBIES_PER_PLAYER)
+	var round_multiplier: int = current_round * 4  # More zombies per round
+	var wave_bonus: int = int(pow(current_round, 1.2))  # Exponential growth
+	zombies_remaining = BASE_ZOMBIES_PER_ROUND + round_multiplier + wave_bonus + (player_count * ZOMBIES_PER_PLAYER)
+
+	# Round 2 is extra heavy - double zombies to test new weapon
+	if current_round == 2:
+		zombies_remaining = int(zombies_remaining * 1.8)
 
 	round_started.emit(current_round)
 
@@ -134,13 +140,16 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool) -> void:
 
 	# Check for round end
 	if zombies_remaining <= 0:
+		# Round 1 complete - give all players a better weapon for round 2
+		if current_round == 1:
+			_give_round1_reward()
 		end_round()
 
 
 func _try_spawn_power_up(position: Vector3) -> void:
-	# 2% base chance, slightly higher on later rounds
-	var chance: float = 0.02 + (current_round * 0.002)
-	chance = min(chance, 0.05)  # Cap at 5%
+	# 3% base chance, slightly higher on later rounds
+	var chance: float = 0.03 + (current_round * 0.002)
+	chance = min(chance, 0.08)  # Cap at 8%
 
 	if randf() < chance:
 		spawn_power_up(position)
@@ -283,6 +292,21 @@ func _give_bonus_weapon() -> void:
 			var random_weapon: String = bonus_weapons[randi() % bonus_weapons.size()]
 			player.give_weapon(random_weapon)
 			AudioManager.play_sound_3d("purchase", player.global_position, 3.0)
+
+
+func _give_round1_reward() -> void:
+	# Give all players a good SMG or shotgun for round 2
+	var round1_rewards: Array[String] = ["mp5", "stakeout", "ak47", "m14"]
+	var reward_weapon: String = round1_rewards[randi() % round1_rewards.size()]
+
+	for player: Node in players.values():
+		if player.has_method("give_weapon"):
+			# Replace pistol or add weapon
+			if player.weapons.size() >= player.max_weapons:
+				player.replace_weapon(reward_weapon)
+			else:
+				player.give_weapon(reward_weapon)
+			AudioManager.play_sound_3d("mystery_box_weapon", player.global_position, 5.0)
 
 
 func trigger_game_over() -> void:

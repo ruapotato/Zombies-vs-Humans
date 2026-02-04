@@ -147,8 +147,8 @@ func _shoot() -> void:
 	if GameManager.is_power_up_active("insta_kill"):
 		damage = 9999
 
-	# Calculate spread
-	var current_spread := aim_spread if is_aiming else spread
+	# Calculate spread - ADS is much more accurate (half the aim_spread)
+	var current_spread := (aim_spread * 0.5) if is_aiming else spread
 
 	# Fire pellets (for shotguns)
 	for i in range(pellet_count):

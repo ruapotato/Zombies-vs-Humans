@@ -1,43 +1,56 @@
 {
 	"name": "city_night",
 	"display_name": "City at Night",
-	"description": "An abandoned city street at night. More space to maneuver, but zombies come from all directions.",
+	"description": "A sprawling abandoned metropolis at night. Features distinct districts including a business skyline, industrial warehouses, residential blocks, and a central highway. Multiple elevation levels with a raised plaza and sunken park add tactical depth.",
 	"author": "Zombies vs Humans Team",
 	"max_players": 4,
-	"difficulty": 3,
+	"difficulty": 4,
 	"spawn_points": [
-		{"x": 0, "y": 1, "z": 0},
-		{"x": 3, "y": 1, "z": 0},
-		{"x": -3, "y": 1, "z": 0},
-		{"x": 0, "y": 1, "z": 3}
+		{"x": -25, "y": 1, "z": -15},
+		{"x": -20, "y": 1, "z": -15},
+		{"x": -25, "y": 1, "z": -10},
+		{"x": -20, "y": 1, "z": -10}
 	],
 	"zombie_spawn_points": [
-		{"x": -35, "y": 0, "z": -35},
-		{"x": 35, "y": 0, "z": -35},
-		{"x": -35, "y": 0, "z": 35},
-		{"x": 35, "y": 0, "z": 35},
-		{"x": 0, "y": 0, "z": -35},
-		{"x": 0, "y": 0, "z": 35},
-		{"x": -35, "y": 0, "z": 0},
-		{"x": 35, "y": 0, "z": 0}
+		{"x": -120, "y": 0, "z": -120},
+		{"x": 0, "y": 0, "z": -120},
+		{"x": 120, "y": 0, "z": -120},
+		{"x": -120, "y": 0, "z": 0},
+		{"x": 120, "y": 0, "z": 0},
+		{"x": -120, "y": 0, "z": 120},
+		{"x": 0, "y": 0, "z": 120},
+		{"x": 120, "y": 0, "z": 120},
+		{"x": -60, "y": 0, "z": -120},
+		{"x": 60, "y": 0, "z": -120},
+		{"x": -120, "y": 0, "z": -60},
+		{"x": -120, "y": 0, "z": 60},
+		{"x": 120, "y": 0, "z": -60},
+		{"x": 120, "y": 0, "z": 60},
+		{"x": -60, "y": 0, "z": 120},
+		{"x": 60, "y": 0, "z": 120},
+		{"x": 100, "y": 3, "z": 100},
+		{"x": -90, "y": -2, "z": -90}
 	],
 	"perk_machine_locations": {
-		"juggernog": {"x": -12, "y": 0, "z": -12},
-		"speed_cola": {"x": 12, "y": 0, "z": -12},
-		"double_tap": {"x": -12, "y": 0, "z": 12},
-		"quick_revive": {"x": 12, "y": 0, "z": 12}
+		"juggernog": {"x": -45, "y": 0, "z": -45},
+		"speed_cola": {"x": 75, "y": 0, "z": -70},
+		"double_tap": {"x": -75, "y": 0, "z": 55},
+		"quick_revive": {"x": 65, "y": 0, "z": 55}
 	},
 	"mystery_box_locations": [
-		{"x": 10, "y": 0, "z": -10},
-		{"x": -10, "y": 0, "z": 10}
+		{"x": -65, "y": 0, "z": 0},
+		{"x": 65, "y": 0, "z": 0},
+		{"x": 70, "y": 4, "z": 70}
 	],
-	"pack_a_punch_location": {"x": 0, "y": 0, "z": 25},
-	"power_switch_location": {"x": 0, "y": 1, "z": -25},
+	"pack_a_punch_location": {"x": 70, "y": 4, "z": 70},
+	"power_switch_location": {"x": -30, "y": 1, "z": -40},
 	"wall_weapons": [
-		{"weapon_id": "m14", "position": {"x": -20, "y": 1.5, "z": -20}, "rotation": 0},
-		{"weapon_id": "olympia", "position": {"x": 20, "y": 1.5, "z": -20}, "rotation": 0},
-		{"weapon_id": "mp5", "position": {"x": -20, "y": 1.5, "z": 20}, "rotation": 0},
-		{"weapon_id": "ak47", "position": {"x": 20, "y": 1.5, "z": 20}, "rotation": 0}
+		{"weapon_id": "m14", "position": {"x": -95, "y": 1.5, "z": -85}, "rotation": 0},
+		{"weapon_id": "olympia", "position": {"x": 60, "y": 1.5, "z": -90}, "rotation": 0},
+		{"weapon_id": "mp5", "position": {"x": -90, "y": 1.5, "z": 40}, "rotation": 0},
+		{"weapon_id": "ak47", "position": {"x": 90, "y": 1.5, "z": 40}, "rotation": 0},
+		{"weapon_id": "uzi", "position": {"x": -50, "y": 1.5, "z": -25}, "rotation": 0},
+		{"weapon_id": "shotgun", "position": {"x": 50, "y": 1.5, "z": 25}, "rotation": 0}
 	],
 	"doors": [],
 	"barriers": [],

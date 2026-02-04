@@ -46,6 +46,29 @@ var last_hit_was_headshot: bool = false
 var pounce_timer: float = 0.0
 var is_pouncing: bool = false
 
+# Stuck detection and lifetime
+const MAX_LIFETIME := 120.0  # Die after 2 minutes if stuck
+const MAX_LIFETIME_LAST_ZOMBIE := 30.0  # Die faster if last zombie
+const STUCK_CHECK_INTERVAL := 3.0  # Check stuck every 3 seconds
+const STUCK_DISTANCE_THRESHOLD := 2.0  # Must move at least 2 units
+var lifetime: float = 0.0
+var stuck_check_timer: float = 0.0
+var last_stuck_check_pos: Vector3 = Vector3.ZERO
+var stuck_count: int = 0
+
+# Varied pathing
+var path_offset: Vector3 = Vector3.ZERO
+var path_offset_timer: float = 0.0
+const PATH_OFFSET_INTERVAL := 2.0
+const PATH_OFFSET_RANGE := 5.0
+
+# Jumping
+var can_jump: bool = true
+var jump_cooldown: float = 0.0
+const JUMP_COOLDOWN_TIME := 1.5
+const JUMP_FORCE := 10.0
+var obstacle_check_timer: float = 0.0
+
 # Components
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model: Node3D = $Model
@@ -128,6 +151,19 @@ func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server():
 		return
 
+	# Update lifetime and stuck detection
+	lifetime += delta
+	_update_stuck_detection(delta)
+
+	# Kill zombie if stuck too long (faster if last zombie remaining)
+	var is_last_zombie := GameManager.zombies_remaining <= 1 and _is_only_zombie_alive()
+	var max_time := MAX_LIFETIME_LAST_ZOMBIE if is_last_zombie else MAX_LIFETIME
+
+	if lifetime >= max_time:
+		print("Zombie died from timeout (stuck for too long)")
+		die()
+		return
+
 	match state:
 		EnemyState.SPAWNING:
 			_play_animation(ANIM_IDLE)
@@ -156,6 +192,18 @@ func _physics_process(delta: float) -> void:
 	# Handle pounce cooldown
 	if pounce_timer > 0:
 		pounce_timer -= delta
+
+	# Handle jump cooldown
+	if jump_cooldown > 0:
+		jump_cooldown -= delta
+	else:
+		can_jump = true
+
+	# Update path offset timer
+	path_offset_timer -= delta
+	if path_offset_timer <= 0:
+		_update_path_offset()
+		path_offset_timer = PATH_OFFSET_INTERVAL
 
 
 func _find_target() -> void:
@@ -196,17 +244,40 @@ func _chase_target(delta: float) -> void:
 		return
 
 	var next_pos := nav_agent.get_next_path_position()
+
+	# Add path offset for varied movement (unless very close to target)
+	var dist_to_target := global_position.distance_to(target_player.global_position)
+	if dist_to_target > 5.0:
+		next_pos += path_offset
+
 	var direction := (next_pos - global_position).normalized()
 	direction.y = 0
 
-	velocity.x = direction.x * speed
-	velocity.z = direction.z * speed
+	# Check for obstacles and try to jump
+	_check_and_jump(direction)
 
-	# Face movement direction
+	# Lerp velocity for smoother direction changes
+	var target_velocity_x := direction.x * speed
+	var target_velocity_z := direction.z * speed
+	velocity.x = lerpf(velocity.x, target_velocity_x, 0.08)
+	velocity.z = lerpf(velocity.z, target_velocity_z, 0.08)
+
+	# Add slight random strafing for unpredictable movement
+	if randf() < 0.01:  # 1% chance per frame
+		var strafe := Vector3(-direction.z, 0, direction.x) * randf_range(-1.0, 1.0)
+		velocity.x += strafe.x
+		velocity.z += strafe.z
+
+	# Smoothly rotate to face movement direction
 	if direction.length() > 0.1:
-		look_at(global_position + direction, Vector3.UP)
+		var target_rot := atan2(-direction.x, -direction.z)
+		rotation.y = lerp_angle(rotation.y, target_rot, 0.1)
 
 	move_and_slide()
+
+	# Check if we hit a wall and should jump
+	if is_on_wall() and can_jump and is_on_floor():
+		_perform_jump()
 
 
 func _attack_target(delta: float) -> void:
@@ -259,6 +330,97 @@ func _try_pounce() -> void:
 	# End pounce after landing
 	await get_tree().create_timer(0.5).timeout
 	is_pouncing = false
+
+
+func _update_stuck_detection(delta: float) -> void:
+	stuck_check_timer += delta
+
+	if stuck_check_timer >= STUCK_CHECK_INTERVAL:
+		stuck_check_timer = 0.0
+
+		var distance_moved := global_position.distance_to(last_stuck_check_pos)
+
+		if distance_moved < STUCK_DISTANCE_THRESHOLD and state == EnemyState.CHASING:
+			stuck_count += 1
+			# If stuck 3 times in a row, try to unstick
+			if stuck_count >= 3:
+				_try_unstick()
+		else:
+			stuck_count = 0
+
+		last_stuck_check_pos = global_position
+
+
+func _try_unstick() -> void:
+	# Try jumping
+	if is_on_floor() and can_jump:
+		_perform_jump()
+
+	# Randomize path offset more aggressively
+	path_offset = Vector3(
+		randf_range(-PATH_OFFSET_RANGE * 2, PATH_OFFSET_RANGE * 2),
+		0,
+		randf_range(-PATH_OFFSET_RANGE * 2, PATH_OFFSET_RANGE * 2)
+	)
+
+	# Give a random velocity push
+	velocity.x = randf_range(-speed, speed)
+	velocity.z = randf_range(-speed, speed)
+
+	stuck_count = 0
+
+
+func _update_path_offset() -> void:
+	# Generate random offset for varied pathing
+	path_offset = Vector3(
+		randf_range(-PATH_OFFSET_RANGE, PATH_OFFSET_RANGE),
+		0,
+		randf_range(-PATH_OFFSET_RANGE, PATH_OFFSET_RANGE)
+	)
+
+
+func _check_and_jump(move_direction: Vector3) -> void:
+	if not can_jump or not is_on_floor():
+		return
+
+	# Raycast forward to check for obstacles
+	var space_state := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position + Vector3(0, 0.5, 0),
+		global_position + Vector3(0, 0.5, 0) + move_direction * 1.5
+	)
+	query.exclude = [self]
+
+	var result := space_state.intersect_ray(query)
+	if result:
+		# Check if obstacle is jumpable (low enough)
+		var hit_pos: Vector3 = result.position
+		var obstacle_height: float = hit_pos.y - global_position.y
+		if obstacle_height < 2.0 and obstacle_height > 0.3:
+			_perform_jump()
+
+
+func _perform_jump() -> void:
+	if not can_jump or not is_on_floor():
+		return
+
+	can_jump = false
+	jump_cooldown = JUMP_COOLDOWN_TIME
+	velocity.y = JUMP_FORCE
+
+	# Add forward momentum
+	if target_player and is_instance_valid(target_player):
+		var direction := (target_player.global_position - global_position).normalized()
+		direction.y = 0
+		velocity.x += direction.x * speed * 0.5
+		velocity.z += direction.z * speed * 0.5
+
+
+func _is_only_zombie_alive() -> bool:
+	var parent := get_parent()
+	if not parent:
+		return true
+	return parent.get_child_count() <= 1
 
 
 func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, hit_position: Vector3 = Vector3.ZERO) -> void:

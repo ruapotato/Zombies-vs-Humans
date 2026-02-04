@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/shop_machine.gd" id="1_shop"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shop"]
+size = Vector3(2, 2.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_shop"]
+size = Vector3(2, 2.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shop"]
+albedo_color = Color(0.2, 0.3, 0.5, 1)
+emission_enabled = true
+emission = Color(0.1, 0.2, 0.4, 1)
+emission_energy_multiplier = 0.5
+
+[node name="ShopMachine" type="Area3D" groups=["interactables"]]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("1_shop")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+shape = SubResource("BoxShape3D_shop")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+mesh = SubResource("BoxMesh_shop")
+surface_material_override/0 = SubResource("StandardMaterial3D_shop")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0.51)
+text = "SHOP"
+font_size = 48
+modulate = Color(0.3, 0.8, 1, 1)
+outline_size = 8
+
+[node name="InfoLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.51)
+text = "Ammo | Armor | Gun"
+font_size = 24
+modulate = Color(1, 1, 1, 1)
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 1)
+light_color = Color(0.3, 0.6, 1, 1)
+light_energy = 2.0
+omni_range = 4.0

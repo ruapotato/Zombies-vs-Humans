@@ -3,6 +3,7 @@ extends Control
 
 @onready var round_label: Label = $TopLeft/RoundLabel
 @onready var zombies_label: Label = $TopLeft/ZombiesLabel
+@onready var fps_label: Label = $TopLeft/FPSLabel
 @onready var power_up_container: HBoxContainer = $TopRight/PowerUpContainer
 @onready var perks_container: HBoxContainer = $BottomLeft/PerksContainer
 @onready var points_label: Label = $BottomRight/PointsLabel
@@ -41,6 +42,10 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	# Always update FPS
+	if fps_label:
+		fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
 	if not local_player:
 		_find_local_player()
 		return

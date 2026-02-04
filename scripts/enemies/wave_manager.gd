@@ -7,9 +7,9 @@ signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
 signal zombie_spawned(zombie: Node)
 
-const SPAWN_DELAY_BASE := 2.0
-const SPAWN_DELAY_MIN := 0.5
-const MAX_ACTIVE_ZOMBIES := 24
+const SPAWN_DELAY_BASE := 1.5
+const SPAWN_DELAY_MIN := 0.3
+const MAX_ACTIVE_ZOMBIES := 50
 
 # Enemy scenes - each type has its own distinct model
 var enemy_scenes: Dictionary = {
@@ -165,22 +165,22 @@ func _spawn_zombie() -> void:
 @rpc("authority", "call_local", "reliable")
 func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 	var scene: PackedScene = enemy_scenes.get(enemy_type, enemy_scenes["walker"])
-	var zombie: CharacterBody3D = scene.instantiate() as CharacterBody3D
+	var zombie: Node3D = scene.instantiate()
 
-	# Apply configuration
+	# Apply configuration using set() for compatibility
 	var config: Dictionary = enemy_configs.get(enemy_type, enemy_configs["walker"])
 
-	zombie.enemy_type = enemy_type
-	zombie.display_name = config.get("display_name", "Zombie")
-	zombie.base_health = config.get("base_health", 30)
-	zombie.base_damage = config.get("base_damage", 20)
-	zombie.base_speed = config.get("base_speed", 4.0)
-	zombie.attack_rate = config.get("attack_rate", 1.0)
-	zombie.point_value = config.get("point_value", 10)
-	zombie.can_pounce = config.get("can_pounce", false)
+	zombie.set("enemy_type", enemy_type)
+	zombie.set("display_name", config.get("display_name", "Zombie"))
+	zombie.set("base_health", config.get("base_health", 30))
+	zombie.set("base_damage", config.get("base_damage", 20))
+	zombie.set("base_speed", config.get("base_speed", 4.0))
+	zombie.set("attack_rate", config.get("attack_rate", 1.0))
+	zombie.set("point_value", config.get("point_value", 10))
+	zombie.set("can_pounce", config.get("can_pounce", false))
 
 	if config.has("pounce_range"):
-		zombie.pounce_range = config["pounce_range"]
+		zombie.set("pounce_range", config["pounce_range"])
 
 	# Add to tree first, then set position
 	zombies_container.add_child(zombie)

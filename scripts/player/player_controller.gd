@@ -26,9 +26,15 @@ const ACCELERATION := 15.0
 const FRICTION := 10.0
 const AIR_CONTROL := 0.3
 
+# ADS (Aim Down Sights)
+const DEFAULT_FOV := 75.0
+const ADS_FOV := 45.0
+const ADS_ZOOM_SPEED := 12.0
+
 var current_speed := WALK_SPEED
 var is_sprinting := false
 var is_crouching := false
+var is_aiming := false
 var can_sprint := true
 var can_double_jump := true
 var has_double_jumped := false
@@ -273,6 +279,10 @@ func _physics_process(delta: float) -> void:
 	# Handle weapon input
 	_handle_weapon_input()
 
+	# Handle ADS FOV zoom
+	var target_fov := ADS_FOV if is_aiming else DEFAULT_FOV
+	camera.fov = lerpf(camera.fov, target_fov, ADS_ZOOM_SPEED * delta)
+
 	# Handle interaction
 	_handle_interaction()
 
@@ -301,6 +311,8 @@ func _handle_movement_input(delta: float) -> void:
 			current_speed = SPRINT_SPEED * 1.2
 	elif is_crouching:
 		current_speed = CROUCH_SPEED
+	elif is_aiming:
+		current_speed = WALK_SPEED * 0.5  # Half speed when ADS
 	else:
 		current_speed = WALK_SPEED
 
@@ -375,13 +387,11 @@ func _handle_weapon_input() -> void:
 			if current_weapon.has_method("try_shoot"):
 				current_weapon.try_shoot()
 
-	# Aiming
-	if Input.is_action_pressed("aim"):
-		if current_weapon.has_method("set_aiming"):
-			current_weapon.set_aiming(true)
-	else:
-		if current_weapon.has_method("set_aiming"):
-			current_weapon.set_aiming(false)
+	# Aiming (ADS)
+	var wants_aim := Input.is_action_pressed("aim") and not is_sprinting
+	is_aiming = wants_aim
+	if current_weapon.has_method("set_aiming"):
+		current_weapon.set_aiming(is_aiming)
 
 	# Reload
 	if Input.is_action_just_pressed("reload"):
