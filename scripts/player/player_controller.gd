@@ -47,6 +47,7 @@ const REVIVE_TIME := 4.0
 const REGEN_DELAY := 4.0  # Seconds before health starts regenerating
 const REGEN_RATE := 25.0  # Health per second when regenerating
 const HITS_TO_DOWN := 4  # How many hits at full damage before going down
+const DAMAGE_COOLDOWN := 0.2  # Minimum seconds between taking damage (invincibility frames)
 
 var health: int = BASE_HEALTH
 var max_health: int = BASE_HEALTH
@@ -525,6 +526,10 @@ func _process_health_regen(delta: float) -> void:
 
 func take_damage(amount: int, _attacker: Node = null) -> void:
 	if is_downed:
+		return
+
+	# Invincibility frames - ignore damage if hit too recently
+	if time_since_hit < DAMAGE_COOLDOWN:
 		return
 
 	health -= amount
