@@ -303,7 +303,15 @@ func _handle_movement_input(delta: float) -> void:
 	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 
 	# Sprinting
-	is_sprinting = Input.is_action_pressed("sprint") and can_sprint and not is_crouching
+	var wants_sprint := Input.is_action_pressed("sprint") and can_sprint and not is_crouching
+
+	# Cancel reload on sprint if weapon allows it
+	if wants_sprint and not is_sprinting and is_reloading:
+		var wpn: Node = get_current_weapon()
+		if wpn and wpn.has_method("cancel_reload"):
+			wpn.cancel_reload()
+
+	is_sprinting = wants_sprint
 
 	# Determine speed
 	if is_sprinting:
@@ -321,6 +329,13 @@ func _handle_movement_input(delta: float) -> void:
 	if has_perk("speed_cola"):
 		current_speed *= 1.07
 
+	# Slow down if reloading a weapon that slows movement
+	var current_weapon_node: Node = get_current_weapon()
+	if current_weapon_node and is_reloading:
+		if current_weapon_node.get("reload_slows_movement"):
+			var speed_mult: float = current_weapon_node.get("reload_speed_multiplier")
+			current_speed *= speed_mult
+
 	# Calculate movement direction
 	var direction: Vector3 = (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
 
@@ -335,6 +350,12 @@ func _handle_movement_input(delta: float) -> void:
 
 	# Jumping - with double jump
 	if Input.is_action_just_pressed("jump"):
+		# Cancel reload on jump if weapon allows it
+		if is_reloading:
+			var wpn: Node = get_current_weapon()
+			if wpn and wpn.has_method("cancel_reload"):
+				wpn.cancel_reload()
+
 		if is_on_floor():
 			velocity.y = JUMP_VELOCITY
 			has_double_jumped = false

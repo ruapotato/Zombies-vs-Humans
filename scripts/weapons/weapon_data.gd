@@ -33,6 +33,9 @@ enum WeaponType {
 
 # Reload
 @export var reload_time: float = 1.5
+@export var reload_slows_movement: bool = false  # If true, slows player during reload
+@export var reload_speed_multiplier: float = 1.0  # Movement speed multiplier during reload
+@export var reload_cancellable: bool = false  # If true, sprint/jump cancels reload
 
 # Accuracy
 @export var spread: float = 0.0  # In degrees
@@ -85,6 +88,9 @@ static func from_dict(data: Dictionary) -> Resource:
 	weapon.max_reserve = data.get("max_reserve", 80)
 
 	weapon.reload_time = data.get("reload_time", 1.5)
+	weapon.reload_slows_movement = data.get("reload_slows_movement", false)
+	weapon.reload_speed_multiplier = data.get("reload_speed_multiplier", 1.0)
+	weapon.reload_cancellable = data.get("reload_cancellable", false)
 
 	weapon.spread = data.get("spread", 0.0)
 	weapon.aim_spread = data.get("aim_spread", 0.0)

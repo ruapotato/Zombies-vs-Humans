@@ -25,6 +25,9 @@ var magazine_size: int = 8
 var max_reserve: int = 80
 
 var reload_time: float = 1.5
+var reload_slows_movement: bool = false
+var reload_speed_multiplier: float = 1.0
+var reload_cancellable: bool = false
 
 var spread: float = 0.0
 var aim_spread: float = 0.0
@@ -84,6 +87,9 @@ func _load_weapon_data() -> void:
 	max_reserve = data.max_reserve
 
 	reload_time = data.reload_time
+	reload_slows_movement = data.reload_slows_movement
+	reload_speed_multiplier = data.reload_speed_multiplier
+	reload_cancellable = data.reload_cancellable
 
 	spread = data.spread
 	aim_spread = data.aim_spread
@@ -320,6 +326,20 @@ func _finish_reload() -> void:
 
 	ammo_changed.emit(current_ammo, reserve_ammo)
 	reloading_finished.emit()
+
+	if owner_player:
+		owner_player.is_reloading = false
+
+
+func cancel_reload() -> void:
+	if not is_reloading:
+		return
+
+	if not reload_cancellable:
+		return
+
+	is_reloading = false
+	reload_timer.stop()
 
 	if owner_player:
 		owner_player.is_reloading = false
