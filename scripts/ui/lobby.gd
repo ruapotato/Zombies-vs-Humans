@@ -42,6 +42,12 @@ func _setup_map_list() -> void:
 	# Only host can change map
 	map_select.disabled = not NetworkManager.is_server()
 
+	# Set initial map to match what's displayed (first item)
+	if NetworkManager.is_server() and map_select.item_count > 0:
+		var initial_map: String = map_select.get_item_metadata(0)
+		NetworkManager.set_server_map(initial_map)
+		print("Initial map set to: ", initial_map)
+
 
 func _update_ui() -> void:
 	# Update start button visibility (host only)
