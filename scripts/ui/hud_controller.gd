@@ -344,12 +344,11 @@ func _update_minimap() -> void:
 		return
 
 	# Update player marker rotation (direction indicator)
-	var player_yaw := local_player.rotation.y
+	var player_yaw: float = local_player.rotation.y
 	player_marker.rotation = -player_yaw
 
 	# Update POI markers relative to player position
 	var player_pos := Vector2(local_player.global_position.x, local_player.global_position.z)
-	var map_center := minimap_container.size / 2.0
 
 	# Initialize POI markers if not done
 	if poi_markers.is_empty():
