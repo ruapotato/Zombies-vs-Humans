@@ -520,14 +520,16 @@ func replace_weapon(weapon_id: String) -> void:
 
 	var weapon_scene: PackedScene = load(weapon_scene_path)
 	var weapon: Node3D = weapon_scene.instantiate() as Node3D
-	weapon.set("weapon_id", weapon_id)
-	weapon.set("owner_player", self)
+	weapon.weapon_id = weapon_id
+	weapon.owner_player = self
 
 	weapon_holder.add_child(weapon)
 	weapon.position = Vector3.ZERO
+	weapon.visible = true  # Make sure the new weapon is visible
 	weapons[current_weapon_index] = weapon
 
 	weapon_changed.emit(weapon)
+	print("Replaced weapon with: %s, owner: %s" % [weapon_id, weapon.owner_player])
 
 
 func _process_health_regen(delta: float) -> void:
