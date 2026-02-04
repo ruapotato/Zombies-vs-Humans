@@ -132,7 +132,7 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool, hit_posit
 		players[killer_id].add_points(points)
 
 	# Spawn 3D point popup at hit location
-	var popup_pos := hit_position if hit_position != Vector3.ZERO else zombie.global_position + Vector3(0, 1.5, 0)
+	var popup_pos: Vector3 = hit_position if hit_position != Vector3.ZERO else zombie.global_position + Vector3(0, 1.5, 0)
 	rpc("_spawn_point_popup", popup_pos, points, is_headshot)
 
 	zombie_killed.emit(zombie, killer_id, points)
