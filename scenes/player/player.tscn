@@ -29,8 +29,9 @@ shape = SubResource("CapsuleShape3D_player")
 transform = Transform3D(-1.145, 0, -1.0009908e-07, 0, 1.145, 0, 1.0009908e-07, 0, -1.145, 0, 0, 0.259754)
 
 [node name="gun_mount" type="BoneAttachment3D" parent="Model/metarig/Skeleton3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.1)
 bone_name = "hand.R"
+
+[node name="Offset" type="Node3D" parent="Model/metarig/Skeleton3D/gun_mount"]
 
 [node name="CameraMount" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)

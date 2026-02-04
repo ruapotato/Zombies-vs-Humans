@@ -62,8 +62,12 @@ var look_rotation := Vector2.ZERO  # x = yaw, y = pitch
 # Components
 @onready var camera_mount: Node3D = $CameraMount
 @onready var camera: Camera3D = $CameraMount/Camera3D
-@onready var weapon_holder: Node3D = $Model/metarig/Skeleton3D/gun_mount
+@onready var weapon_holder: Node3D = $Model/metarig/Skeleton3D/gun_mount/Offset
+@onready var gun_mount: Node3D = $Model/metarig/Skeleton3D/gun_mount
 @onready var aim_ray: RayCast3D = $CameraMount/Camera3D/RayCast3D
+
+# Weapon offset in player-relative coordinates (Y = up, X = right, -Z = forward)
+const WEAPON_OFFSET := Vector3(-0.05, 0.0, -0.12)  # Left and forward from hand
 @onready var interaction_ray: RayCast3D = $CameraMount/Camera3D/InteractionRay
 @onready var model: Node3D = $Model
 @onready var footstep_timer: Timer = $FootstepTimer
@@ -217,14 +221,32 @@ func _set_lower_animation(anim_name: String) -> void:
 			lower_node.animation = anim_name
 
 
+func _set_upper_animation(anim_name: String) -> void:
+	if not anim_tree or not anim_tree.tree_root:
+		return
+	var blend_tree: AnimationNodeBlendTree = anim_tree.tree_root as AnimationNodeBlendTree
+	if blend_tree:
+		var upper_node: AnimationNodeAnimation = blend_tree.get_node("Upper") as AnimationNodeAnimation
+		if upper_node and upper_node.animation != anim_name:
+			upper_node.animation = anim_name
+
+
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
 
-	# Keep weapon upright and pointing forward (use bone position, but player rotation)
-	if weapon_holder:
+	# Keep weapon upright and pointing forward
+	# Use bone position as base, but apply offset in player-relative coordinates (Y = up)
+	if gun_mount:
+		# Calculate offset in world space based on player's facing direction
+		var player_basis := global_transform.basis
+		var world_offset := player_basis * WEAPON_OFFSET
+
 		for weapon in weapons:
 			if weapon:
+				# Position: bone position + player-relative offset
+				weapon.global_position = gun_mount.global_position + world_offset
+				# Rotation: match player rotation (Y up, facing forward)
 				weapon.global_rotation = global_rotation
 
 	if is_downed:
@@ -298,6 +320,21 @@ func _handle_movement_input(delta: float) -> void:
 		_set_lower_animation(ANIM_IDLE)
 		is_moving = false
 
+	# Update upper body animation - run arms when sprinting (unless has power-up)
+	var can_run_and_gun := GameManager.is_power_up_active("stamin_up_pro")
+	if is_sprinting and not can_run_and_gun:
+		_set_upper_animation(ANIM_RUN)
+		# Hide weapon while sprinting
+		var current_weapon: Node = get_current_weapon()
+		if current_weapon:
+			current_weapon.visible = false
+	else:
+		_set_upper_animation(ANIM_GUN_HOLD)
+		# Show current weapon
+		var current_weapon: Node = get_current_weapon()
+		if current_weapon:
+			current_weapon.visible = true
+
 
 func _handle_weapon_input() -> void:
 	if weapons.is_empty():
@@ -307,9 +344,10 @@ func _handle_weapon_input() -> void:
 	if not current_weapon:
 		return
 
-	# Shooting
+	# Shooting (blocked while sprinting unless has power-up)
+	var can_run_and_gun := GameManager.is_power_up_active("stamin_up_pro")
 	if Input.is_action_pressed("shoot"):
-		if not is_sprinting and not is_reloading:
+		if (not is_sprinting or can_run_and_gun) and not is_reloading:
 			if current_weapon.has_method("try_shoot"):
 				current_weapon.try_shoot()
 
