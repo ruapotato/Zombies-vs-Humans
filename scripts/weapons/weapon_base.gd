@@ -257,8 +257,10 @@ func _spawn_hit_effect(hit_position: Vector3, normal: Vector3, is_headshot: bool
 	var effect: Node3D
 	if is_headshot:
 		effect = headshot_effect_scene.instantiate()
+		AudioManager.play_sound_3d("hit_head", hit_position, 0.0)
 	else:
 		effect = hit_effect_scene.instantiate()
+		AudioManager.play_sound_3d("hit_body", hit_position, -3.0)
 
 	# Add to scene tree
 	get_tree().current_scene.add_child(effect)

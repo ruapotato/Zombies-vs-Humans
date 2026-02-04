@@ -341,7 +341,11 @@ func die() -> void:
 	collision_layer = 0
 	collision_mask = 0
 
-	AudioManager.play_sound_3d("zombie_death", global_position)
+	# Play appropriate death sound
+	if last_hit_was_headshot:
+		AudioManager.play_sound_3d("headshot_kill", global_position, 3.0)
+	else:
+		AudioManager.play_sound_3d("zombie_death", global_position)
 
 	# Notify game manager
 	if multiplayer.is_server():
