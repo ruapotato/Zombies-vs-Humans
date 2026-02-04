@@ -219,42 +219,45 @@ func _spawn_interactables_from_map(interactables_node: Node3D) -> void:
 	var shop_machine_scene: PackedScene = preload("res://scenes/interactables/shop_machine.tscn")
 
 	for placeholder in interactables_node.get_children():
+		# Skip nodes that already have scripts (they're already proper instances)
+		if placeholder.get_script() != null:
+			continue
+
+		# Skip nodes that are in the interactables group (already set up)
+		if placeholder.is_in_group("interactables"):
+			continue
+
 		var node_name: String = placeholder.name.to_lower()
-		var spawn_pos: Vector3 = placeholder.global_position
-		var spawn_rot: Vector3 = placeholder.global_rotation
+		var spawn_transform: Transform3D = placeholder.transform
 		var instance: Node3D = null
 
 		if "perk" in node_name:
 			instance = perk_machine_scene.instantiate() as Node3D
 			# Extract perk name from placeholder name (e.g., "PerkJuggernog" -> "juggernog")
 			var perk_name := _extract_perk_name(placeholder.name)
-			if instance.has_method("set") and perk_name:
+			if perk_name:
 				instance.set("perk_name", perk_name)
 
-		elif "mysterybox" in node_name or "mystery_box" in node_name or node_name == "mysterybox":
+		elif "mysterybox" in node_name or "mystery_box" in node_name:
 			instance = mystery_box_scene.instantiate() as Node3D
 
-		elif "power" in node_name and "switch" in node_name:
-			instance = power_switch_scene.instantiate() as Node3D
-
-		elif "powerswitch" in node_name:
+		elif "power" in node_name:
 			instance = power_switch_scene.instantiate() as Node3D
 
 		elif "wallweapon" in node_name or "wall_weapon" in node_name:
 			instance = wall_weapon_scene.instantiate() as Node3D
 			# Extract weapon name from placeholder
 			var weapon_id := _extract_weapon_name(placeholder.name)
-			if instance.has_method("set") and weapon_id:
+			if weapon_id:
 				instance.set("weapon_id", weapon_id)
 
 		elif "shop" in node_name:
 			instance = shop_machine_scene.instantiate() as Node3D
 
 		if instance:
-			instance.global_position = spawn_pos
-			instance.global_rotation = spawn_rot
 			interactables_container.add_child(instance)
-			print("Spawned interactable: %s at %s" % [placeholder.name, spawn_pos])
+			instance.transform = spawn_transform
+			print("Spawned interactable: %s at %s" % [placeholder.name, spawn_transform.origin])
 
 
 func _extract_perk_name(placeholder_name: String) -> String:
