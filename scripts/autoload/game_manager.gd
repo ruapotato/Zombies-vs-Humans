@@ -246,11 +246,43 @@ func is_power_up_active(power_up_type: String) -> bool:
 func end_round() -> void:
 	round_ended.emit(current_round)
 
+	# Give all players max ammo between rounds
+	_give_round_end_rewards()
+
 	# Brief delay before next round
 	await get_tree().create_timer(5.0).timeout
 
 	if current_state == GameState.PLAYING:
 		start_next_round()
+
+
+func _give_round_end_rewards() -> void:
+	# Max ammo for everyone
+	for player: Node in players.values():
+		if player.has_method("refill_ammo"):
+			player.refill_ammo()
+
+	# Every 5 rounds, give a random new gun to all players
+	if current_round > 0 and current_round % 5 == 0:
+		_give_bonus_weapon()
+
+	# Play round end sound
+	AudioManager.play_sound_ui("round_start", 0.0)
+
+
+func _give_bonus_weapon() -> void:
+	# Pool of bonus weapons that can be given
+	var bonus_weapons: Array[String] = [
+		"mp5", "ak47", "m14", "olympia", "stakeout",
+		"rpk", "galil", "python", "spas12", "commando"
+	]
+
+	for player: Node in players.values():
+		# Only give weapon if player has room
+		if player.has_method("give_weapon") and player.weapons.size() < player.max_weapons:
+			var random_weapon: String = bonus_weapons[randi() % bonus_weapons.size()]
+			player.give_weapon(random_weapon)
+			AudioManager.play_sound_3d("purchase", player.global_position, 3.0)
 
 
 func trigger_game_over() -> void:
