@@ -21,6 +21,7 @@ const WALK_SPEED := 5.0
 const SPRINT_SPEED := 8.0
 const CROUCH_SPEED := 2.5
 const JUMP_VELOCITY := 6.0
+const DOUBLE_JUMP_VELOCITY := 5.0
 const ACCELERATION := 15.0
 const FRICTION := 10.0
 const AIR_CONTROL := 0.3
@@ -29,6 +30,8 @@ var current_speed := WALK_SPEED
 var is_sprinting := false
 var is_crouching := false
 var can_sprint := true
+var can_double_jump := true
+var has_double_jumped := false
 
 # Health (CoD-style regenerating health)
 const BASE_HEALTH := 100
@@ -317,10 +320,20 @@ func _handle_movement_input(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, friction_val * delta)
 		velocity.z = move_toward(velocity.z, 0, friction_val * delta)
 
-	# Jumping
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-		AudioManager.play_sound_3d("jump", global_position, -5.0)
+	# Jumping - with double jump
+	if Input.is_action_just_pressed("jump"):
+		if is_on_floor():
+			velocity.y = JUMP_VELOCITY
+			has_double_jumped = false
+			AudioManager.play_sound_3d("jump", global_position, -5.0)
+		elif can_double_jump and not has_double_jumped:
+			velocity.y = DOUBLE_JUMP_VELOCITY
+			has_double_jumped = true
+			AudioManager.play_sound_3d("double_jump", global_position, -3.0)
+
+	# Reset double jump when landing
+	if is_on_floor():
+		has_double_jumped = false
 
 	# Update lower body animation based on movement
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()

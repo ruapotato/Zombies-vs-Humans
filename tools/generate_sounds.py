@@ -36,48 +36,77 @@ def envelope(length, attack=0.01, decay=0.1, sustain=0.5, release=0.2):
 
 
 def generate_hit_body():
-    """Generate a thud sound for body hit."""
-    duration = 0.15
+    """Generate a meaty thud sound for body hit."""
+    duration = 0.2
     t = np.linspace(0, duration, int(SAMPLE_RATE * duration))
 
-    freq = 80
-    audio = np.sin(2 * np.pi * freq * t) * np.exp(-t * 30)
-    noise = np.random.randn(len(t)) * 0.3 * np.exp(-t * 40)
-    audio += noise
+    # Deep thud - low frequency punch
+    thud = np.sin(2 * np.pi * 50 * t) * np.exp(-t * 25)
+    thud += np.sin(2 * np.pi * 80 * t) * 0.7 * np.exp(-t * 30)
 
+    # Meaty impact - mid frequency
+    impact = np.sin(2 * np.pi * 120 * t) * 0.5 * np.exp(-t * 40)
+
+    # Flesh slap - filtered noise burst
+    noise = np.random.randn(len(t)) * 0.4 * np.exp(-t * 50)
+    # Low-pass effect by averaging
+    noise = np.convolve(noise, np.ones(10)/10, mode='same')
+
+    audio = thud + impact + noise
     return normalize(audio)
 
 
 def generate_hit_head():
-    """Generate a splat/critical hit sound for headshot."""
-    duration = 0.2
+    """Generate a sharp crack/ping for headshot hit."""
+    duration = 0.25
     t = np.linspace(0, duration, int(SAMPLE_RATE * duration))
 
-    freq = 200
-    audio = np.sin(2 * np.pi * freq * t) * np.exp(-t * 25)
-    noise = np.random.randn(len(t)) * 0.5 * np.exp(-t * 20)
-    high_freq = np.sin(2 * np.pi * 800 * t) * 0.3 * np.exp(-t * 40)
+    # Sharp metallic ping - high frequency
+    ping = np.sin(2 * np.pi * 1800 * t) * np.exp(-t * 35)
+    ping += np.sin(2 * np.pi * 2400 * t) * 0.5 * np.exp(-t * 45)
 
-    audio = audio + noise + high_freq
+    # Crack sound
+    crack = np.sin(2 * np.pi * 600 * t) * 0.6 * np.exp(-t * 50)
+
+    # Brief noise burst
+    noise = np.random.randn(len(t)) * 0.5 * np.exp(-t * 60)
+
+    # Sub bass punch
+    bass = np.sin(2 * np.pi * 80 * t) * 0.4 * np.exp(-t * 30)
+
+    audio = ping + crack + noise + bass
     return normalize(audio)
 
 
 def generate_headshot_kill():
-    """Dramatic headshot kill sound - splat with impact."""
-    duration = 0.4
+    """Dramatic headshot kill - satisfying splat with bass and sizzle."""
+    duration = 0.5
     t = np.linspace(0, duration, int(SAMPLE_RATE * duration))
 
-    # Initial crack/pop
-    crack = np.sin(2 * np.pi * 400 * t) * np.exp(-t * 50)
-    crack += np.sin(2 * np.pi * 1200 * t) * 0.4 * np.exp(-t * 80)
+    # Initial sharp crack/pop - very fast attack
+    crack = np.sin(2 * np.pi * 800 * t) * np.exp(-t * 80)
+    crack += np.sin(2 * np.pi * 2000 * t) * 0.6 * np.exp(-t * 100)
 
-    # Wet splat noise
-    splat = np.random.randn(len(t)) * 0.7 * np.exp(-t * 15)
+    # Satisfying "splorch" - descending wet sound
+    splat_freq = np.linspace(400, 100, len(t))
+    splat_phase = 2 * np.pi * np.cumsum(splat_freq) / SAMPLE_RATE
+    splat = np.sin(splat_phase) * 0.5 * np.exp(-t * 12)
 
-    # Low impact thud
-    thud = np.sin(2 * np.pi * 60 * t) * 0.5 * np.exp(-t * 10)
+    # Wet noise burst
+    wet_noise = np.random.randn(len(t)) * 0.8 * np.exp(-t * 20)
+    # Make it "wetter" with some filtering
+    wet_noise = np.convolve(wet_noise, np.ones(5)/5, mode='same')
 
-    audio = crack + splat + thud
+    # Heavy sub-bass impact
+    bass = np.sin(2 * np.pi * 40 * t) * 0.7 * np.exp(-t * 8)
+    bass += np.sin(2 * np.pi * 60 * t) * 0.5 * np.exp(-t * 10)
+
+    # High frequency sizzle/spray
+    sizzle = np.random.randn(len(t)) * 0.3 * np.exp(-t * 25)
+    # High-pass effect
+    sizzle = sizzle - np.convolve(sizzle, np.ones(20)/20, mode='same')
+
+    audio = crack + splat + wet_noise + bass + sizzle
     return normalize(audio)
 
 
@@ -282,6 +311,27 @@ def generate_jump():
     return normalize(audio + noise)
 
 
+def generate_double_jump():
+    """Double jump sound - higher pitched whoosh."""
+    duration = 0.15
+    t = np.linspace(0, duration, int(SAMPLE_RATE * duration))
+
+    # Higher pitched sweep
+    freq = np.linspace(200, 500, len(t))
+    phase = 2 * np.pi * np.cumsum(freq) / SAMPLE_RATE
+    audio = np.sin(phase) * np.exp(-t * 25)
+
+    # Airy whoosh
+    whoosh = np.random.randn(len(t)) * 0.4 * np.exp(-t * 30)
+    # Band-pass effect
+    whoosh = whoosh - np.convolve(whoosh, np.ones(30)/30, mode='same')
+
+    # Add a little sparkle
+    sparkle = np.sin(2 * np.pi * 1200 * t) * 0.2 * np.exp(-t * 50)
+
+    return normalize(audio + whoosh + sparkle)
+
+
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -305,6 +355,7 @@ def main():
         'player_revive.wav': generate_player_revive,
         'player_revived.wav': generate_player_revived,
         'jump.wav': generate_jump,
+        'double_jump.wav': generate_double_jump,
     }
 
     for filename, generator in sounds.items():

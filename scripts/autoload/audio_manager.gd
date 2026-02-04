@@ -40,6 +40,7 @@ var sounds: Dictionary = {
 	"player_revived": "res://assets/sounds/player_revived.wav",
 	"footstep": "res://assets/sounds/footstep.wav",
 	"jump": "res://assets/sounds/jump.wav",
+	"double_jump": "res://assets/sounds/double_jump.wav",
 	"land": "res://assets/sounds/footstep.wav",  # Use footstep for landing
 
 	# Hit feedback
