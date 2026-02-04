@@ -9,7 +9,6 @@ extends Control
 @onready var weapon_name: Label = $BottomRight/WeaponInfo/WeaponName
 @onready var ammo_label: Label = $BottomRight/WeaponInfo/AmmoLabel
 @onready var interaction_prompt: Label = $Center/InteractionPrompt
-@onready var health_bar: ProgressBar = $HealthBar
 @onready var announcement_label: Label = $AnnouncementLabel
 @onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var downed_overlay: ColorRect = $DownedOverlay
@@ -108,18 +107,9 @@ func _on_round_ended(round_number: int) -> void:
 	_show_announcement("ROUND %d COMPLETE" % round_number, Color.GREEN)
 
 
-func _on_health_changed(new_health: int, max_health: int) -> void:
-	health_bar.max_value = max_health
-	health_bar.value = new_health
-
-	# Color based on health
-	var health_percent := float(new_health) / float(max_health)
-	if health_percent > 0.5:
-		health_bar.modulate = Color.GREEN
-	elif health_percent > 0.25:
-		health_bar.modulate = Color.YELLOW
-	else:
-		health_bar.modulate = Color.RED
+func _on_health_changed(_new_health: int, _max_health: int) -> void:
+	# Health bar removed - using CoD-style red screen instead
+	pass
 
 
 func _on_damage_intensity_changed(intensity: float) -> void:
