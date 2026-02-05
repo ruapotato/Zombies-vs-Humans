@@ -1,37 +1,30 @@
 extends CharacterBody3D
-class_name Enemy
-## Base enemy class - can be controlled by ZombieHorde (efficient) or run individually
+class_name BillboardZombie
+## Paper Mario style 2D billboard zombie - extremely fast to render
 
-signal died(enemy: Enemy, killer_id: int, is_headshot: bool)
+signal died(enemy: Node3D, killer_id: int, is_headshot: bool)
 signal damaged(amount: int, is_headshot: bool)
 
 enum EnemyState { SPAWNING, IDLE, CHASING, ATTACKING, DYING, DEAD }
 
-# Enemy type config (override in subclasses)
-@export var enemy_type: String = "dretch"
-@export var display_name: String = "Dretch"
-
-# Base stats (scaled by round)
-@export var base_health: int = 30
-@export var base_damage: int = 20
-@export var base_speed: float = 4.0
+# Enemy config
+@export var enemy_type: String = "walker"
+@export var display_name: String = "Walker"
+@export var base_health: int = 20
+@export var base_damage: int = 15
+@export var base_speed: float = 3.0
 @export var attack_rate: float = 1.0
 @export var point_value: int = 10
-
-# Enemy dimensions for damage calculation
 @export var enemy_height: float = 1.8
-@export var head_position_y: float = 1.6
-
-# Special abilities
+@export var head_position_y: float = 1.5
 @export var can_pounce: bool = false
 @export var pounce_range: float = 5.0
-@export var pounce_cooldown: float = 3.0
 
 # Runtime state
-var health: int = 30
-var max_health: int = 30
-var damage: int = 20
-var speed: float = 4.0
+var health: int = 20
+var max_health: int = 20
+var damage: int = 15
+var speed: float = 3.0
 var state: EnemyState = EnemyState.SPAWNING
 
 var target_player: Node3D = null
@@ -41,46 +34,31 @@ var last_attacker_id: int = 0
 var last_hit_was_headshot: bool = false
 var last_hit_position: Vector3 = Vector3.ZERO
 
-# Horde control - when true, ZombieHorde handles AI
+# Horde control
 var horde_controlled: bool = false
 
-# Components
-@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var model: Node3D = $Model
-@onready var attack_timer: Timer = $AttackTimer
-
 # Animation
-var anim_player: AnimationPlayer = null
-var current_anim: String = ""
+var anim_time: float = 0.0
+var base_y: float = 0.0
 
-const ANIM_IDLE := "m root"
-const ANIM_RUN := "m run"
-const ANIM_DEATH := "m death"
-const ANIM_ATTACK := "swipe"
+@onready var sprite: Sprite3D = $Sprite3D
+@onready var attack_timer: Timer = $AttackTimer
+@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 
 func _ready() -> void:
-	# Find AnimationPlayer in model (may not exist for simple zombies)
-	if model:
-		_find_animation_player(model)
-		if anim_player:
-			_play_animation(ANIM_IDLE)
-		# Note: No warning if no AnimationPlayer - simple zombies don't have one
-
-	# Scale stats by round
 	_scale_stats_for_round()
-
-	# Set meta for point value
 	set_meta("point_value", point_value)
 
-	# Start spawning state briefly
+	# Randomize animation offset so zombies don't all sync
+	anim_time = randf() * TAU
+	base_y = sprite.position.y if sprite else 0.9
+
 	state = EnemyState.SPAWNING
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.2).timeout
 	if is_instance_valid(self):
 		state = EnemyState.CHASING
 
-	# Disable individual physics if horde will control us
-	# The horde manager will call set_horde_controlled(true) after spawn
 	if not multiplayer.is_server():
 		set_physics_process(false)
 
@@ -88,66 +66,72 @@ func _ready() -> void:
 func set_horde_controlled(controlled: bool) -> void:
 	horde_controlled = controlled
 	if controlled:
-		# Disable individual AI - horde handles everything
 		set_physics_process(false)
-		# Stop path update timer - horde handles paths
-		var path_timer := get_node_or_null("PathUpdateTimer") as Timer
-		if path_timer:
-			path_timer.stop()
-		# Stop sync timer - horde handles sync
-		var sync_timer := get_node_or_null("SyncTimer") as Timer
-		if sync_timer:
-			sync_timer.stop()
-
-
-func _find_animation_player(node: Node) -> void:
-	if node is AnimationPlayer:
-		anim_player = node as AnimationPlayer
-		return
-	for child in node.get_children():
-		_find_animation_player(child)
-		if anim_player:
-			return
-
-
-func _play_animation(anim_name: String, anim_speed: float = 1.0) -> void:
-	if not anim_player:
-		return
-	if current_anim == anim_name and anim_player.is_playing():
-		return
-	if anim_player.has_animation(anim_name):
-		current_anim = anim_name
-		anim_player.play(anim_name, -1, anim_speed)
 
 
 func _scale_stats_for_round() -> void:
 	var round_num := GameManager.current_round
-
 	max_health = int(GameManager.get_zombie_health_for_round(base_health))
 	health = max_health
-
 	damage = int(GameManager.get_zombie_damage_for_round(base_damage))
-
 	speed = base_speed + (round_num * 0.1)
 	speed = min(speed, base_speed * 1.5)
 
 
-# Called by horde to update animation based on movement
+func set_zombie_color(color: Color) -> void:
+	if sprite and sprite.texture:
+		sprite.modulate = color
+
+
 func update_animation_from_velocity() -> void:
 	var dominated_velocity := absf(velocity.x) + absf(velocity.z)
+
 	if state == EnemyState.ATTACKING:
-		return  # Don't override attack animation
-	if dominated_velocity > 0.5:
-		_play_animation(ANIM_RUN, 1.5)
+		_animate_attack()
+	elif dominated_velocity > 0.5:
+		_animate_walk()
 	else:
-		_play_animation(ANIM_IDLE)
+		_animate_idle()
 
 
-# Called by horde to stop animation for far zombies
+func _animate_walk() -> void:
+	anim_time += get_physics_process_delta_time() * speed * 3.0
+
+	if sprite:
+		# Bounce up and down
+		sprite.position.y = base_y + abs(sin(anim_time)) * 0.08
+		# Slight squash and stretch
+		var squash := 1.0 + sin(anim_time * 2.0) * 0.05
+		sprite.scale.x = 1.0 / squash
+		sprite.scale.y = squash
+		# Tilt side to side like walking
+		sprite.rotation.z = sin(anim_time) * 0.1
+
+
+func _animate_idle() -> void:
+	anim_time += get_physics_process_delta_time() * 2.0
+
+	if sprite:
+		# Gentle sway
+		sprite.position.y = base_y + sin(anim_time * 0.8) * 0.02
+		sprite.rotation.z = sin(anim_time * 0.5) * 0.05
+		sprite.scale.x = 1.0
+		sprite.scale.y = 1.0
+
+
+func _animate_attack() -> void:
+	anim_time += get_physics_process_delta_time() * 6.0
+
+	if sprite:
+		# Lunge forward
+		var lunge := sin(anim_time * 4.0)
+		sprite.position.z = 0.2 * max(0, lunge)
+		sprite.scale.x = 1.0 + max(0, lunge) * 0.2
+		sprite.rotation.z = lunge * 0.15
+
+
 func stop_animation() -> void:
-	if anim_player and anim_player.is_playing():
-		anim_player.stop()
-	current_anim = ""
+	anim_time = randf() * TAU
 
 
 func _attack_target(_delta: float) -> void:
@@ -163,8 +147,6 @@ func _perform_attack() -> void:
 	can_attack = false
 	attack_timer.wait_time = attack_rate
 	attack_timer.start()
-
-	_play_animation(ANIM_ATTACK, 2.0)
 
 	var attack_target: Node3D = null
 	for player in players_in_attack_range:
@@ -199,6 +181,13 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 	damaged.emit(final_damage, is_headshot)
 	AudioManager.play_sound_3d("zombie_hurt", global_position, -5.0)
 
+	# Flash white on hit
+	if sprite:
+		sprite.modulate = Color.WHITE
+		await get_tree().create_timer(0.05).timeout
+		if is_instance_valid(self) and sprite:
+			sprite.modulate = Color.WHITE  # Will be set by color system
+
 	rpc("_sync_damage", health)
 
 	if health <= 0:
@@ -214,12 +203,9 @@ func _calculate_distance_based_damage(base_amount: int, hit_position: Vector3) -
 	distance_from_head = clampf(distance_from_head, 0.0, enemy_height)
 
 	var normalized_distance := distance_from_head / enemy_height
-	var min_multiplier := 0.25
-	var max_multiplier := 0.5
-	var damage_multiplier := lerpf(max_multiplier, min_multiplier, normalized_distance)
+	var damage_multiplier := lerpf(0.5, 0.25, normalized_distance)
 
-	var final_damage := int(max_health * damage_multiplier)
-	return max(final_damage, 1)
+	return max(int(max_health * damage_multiplier), 1)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -245,14 +231,15 @@ func die() -> void:
 
 	died.emit(self, last_attacker_id, last_hit_was_headshot)
 
-	if anim_player and anim_player.has_animation(ANIM_DEATH):
-		_play_animation(ANIM_DEATH)
-		await anim_player.animation_finished
-		_finish_death()
-	else:
+	# Death animation - fall flat
+	if sprite:
 		var tween := create_tween()
-		tween.tween_property(model, "scale", Vector3(1, 0.1, 1), 0.3)
+		tween.tween_property(sprite, "rotation:x", -PI/2, 0.3)
+		tween.parallel().tween_property(sprite, "position:y", 0.1, 0.3)
+		tween.parallel().tween_property(sprite, "modulate:a", 0.5, 0.3)
 		tween.tween_callback(_finish_death)
+	else:
+		_finish_death()
 
 
 func _finish_death() -> void:
@@ -260,25 +247,19 @@ func _finish_death() -> void:
 	queue_free()
 
 
-func _on_attack_area_body_entered(body: Node3D) -> void:
-	if body.is_in_group("players"):
-		if body not in players_in_attack_range:
-			players_in_attack_range.append(body)
+func _on_attack_area_body_entered(body_node: Node3D) -> void:
+	if body_node.is_in_group("players"):
+		if body_node not in players_in_attack_range:
+			players_in_attack_range.append(body_node)
 
 
-func _on_attack_area_body_exited(body: Node3D) -> void:
-	if body in players_in_attack_range:
-		players_in_attack_range.erase(body)
+func _on_attack_area_body_exited(body_node: Node3D) -> void:
+	if body_node in players_in_attack_range:
+		players_in_attack_range.erase(body_node)
 
 
 func _on_attack_timer_timeout() -> void:
 	can_attack = true
-
-
-# Network sync for clients
-func _on_sync_timer_timeout() -> void:
-	if multiplayer.is_server() and not horde_controlled:
-		rpc("_sync_state", global_position, rotation.y, velocity, int(state))
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
@@ -289,5 +270,4 @@ func _sync_state(pos: Vector3, rot_y: float, vel: Vector3, s: int) -> void:
 	rotation.y = rot_y
 	velocity = vel
 	state = s as EnemyState
-	# Update animation on client based on state
 	update_animation_from_velocity()

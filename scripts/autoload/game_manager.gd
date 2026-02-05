@@ -89,8 +89,11 @@ func start_next_round() -> void:
 	var wave_bonus: int = int(pow(current_round, 1.2))  # Exponential growth
 	zombies_remaining = BASE_ZOMBIES_PER_ROUND + round_multiplier + wave_bonus + (player_count * ZOMBIES_PER_PLAYER)
 
+	# Round 1 starts with 1000 zombies for stress testing
+	if current_round == 1:
+		zombies_remaining = 1000
 	# Round 2 is extra heavy - double zombies to test new weapon
-	if current_round == 2:
+	elif current_round == 2:
 		zombies_remaining = int(zombies_remaining * 1.8)
 
 	round_started.emit(current_round)
@@ -177,11 +180,11 @@ func _spawn_power_up_at(position: Vector3, power_up_type: String) -> void:
 	var power_up_scene: PackedScene = preload("res://scenes/interactables/power_up.tscn")
 	var power_up: Node3D = power_up_scene.instantiate()
 	power_up.set("power_up_type", power_up_type)
-	power_up.global_position = position
 
 	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("PowerUps"):
 		game_scene.get_node("PowerUps").add_child(power_up)
+		power_up.global_position = position  # Set position AFTER adding to tree
 
 	power_up_spawned.emit(power_up)
 
@@ -196,19 +199,19 @@ func _spawn_point_popup(position: Vector3, points: int, is_headshot: bool) -> vo
 	label.outline_size = 8
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true  # Always visible
-	label.global_position = position
 
 	var game_scene: Node = get_tree().current_scene
 	if game_scene:
 		game_scene.add_child(label)
+		label.global_position = position  # Set position AFTER adding to tree
 
-	# Animate: float up and fade out
-	var tween := label.create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(label, "global_position", position + Vector3(0, 1.5, 0), 0.8)
-	tween.tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
-	tween.set_parallel(false)
-	tween.tween_callback(label.queue_free)
+		# Animate: float up and fade out
+		var tween := label.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(label, "global_position", position + Vector3(0, 1.5, 0), 0.8)
+		tween.tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
+		tween.set_parallel(false)
+		tween.tween_callback(label.queue_free)
 
 
 func collect_power_up(power_up_type: String, collector_id: int) -> void:

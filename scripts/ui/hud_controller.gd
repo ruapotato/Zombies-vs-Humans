@@ -305,7 +305,13 @@ func _update_interaction_prompt() -> void:
 
 
 func _update_zombies_count() -> void:
-	zombies_label.text = "Zombies: %d" % GameManager.zombies_remaining
+	# Get active zombie count from the scene
+	var active_count := 0
+	var zombies_node := get_tree().current_scene.get_node_or_null("Zombies")
+	if zombies_node:
+		active_count = zombies_node.get_child_count()
+
+	zombies_label.text = "Zombies: %d  Active: %d" % [GameManager.zombies_remaining, active_count]
 
 
 func _update_downed_state() -> void:

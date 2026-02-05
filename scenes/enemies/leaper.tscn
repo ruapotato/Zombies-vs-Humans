@@ -66,11 +66,9 @@ one_shot = true
 
 [node name="PathUpdateTimer" type="Timer" parent="."]
 wait_time = 0.25
-autostart = true
 
 [node name="SyncTimer" type="Timer" parent="."]
-wait_time = 0.1
-autostart = true
+wait_time = 0.2
 
 [connection signal="body_entered" from="AttackArea" to="." method="_on_attack_area_body_entered"]
 [connection signal="body_exited" from="AttackArea" to="." method="_on_attack_area_body_exited"]

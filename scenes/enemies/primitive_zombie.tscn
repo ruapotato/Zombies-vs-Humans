@@ -1,0 +1,117 @@
+[gd_scene load_steps=11 format=3 uid="uid://primitive_zombie_perf"]
+
+[ext_resource type="Script" path="res://scripts/enemies/primitive_zombie.gd" id="1_script"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
+radius = 0.3
+height = 1.6
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_simple"]
+radius = 0.28
+height = 1.5
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.22
+height = 0.6
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.15
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_limb"]
+radius = 0.06
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_zombie"]
+albedo_color = Color(0.4, 0.55, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dark"]
+albedo_color = Color(0.3, 0.45, 0.28, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_attack"]
+radius = 1.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.02
+
+[node name="PrimitiveZombie" type="CharacterBody3D" groups=["enemies"]]
+collision_layer = 4
+collision_mask = 7
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("CapsuleShape3D_col")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="SimpleMesh" type="MeshInstance3D" parent="Model"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CapsuleMesh_simple")
+surface_material_override/0 = SubResource("StandardMaterial3D_zombie")
+
+[node name="DetailParts" type="Node3D" parent="Model"]
+
+[node name="Body" type="MeshInstance3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = SubResource("StandardMaterial3D_zombie")
+
+[node name="Head" type="Node3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Model/DetailParts/Head"]
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = SubResource("StandardMaterial3D_zombie")
+
+[node name="LeftEye" type="MeshInstance3D" parent="Model/DetailParts/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.055, 0.02, 0.12)
+mesh = SubResource("SphereMesh_eye")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="RightEye" type="MeshInstance3D" parent="Model/DetailParts/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.055, 0.02, 0.12)
+mesh = SubResource("SphereMesh_eye")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="LeftArm" type="MeshInstance3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.0, 0)
+mesh = SubResource("CapsuleMesh_limb")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="RightArm" type="MeshInstance3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.0, 0)
+mesh = SubResource("CapsuleMesh_limb")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0.35, 0)
+mesh = SubResource("CapsuleMesh_limb")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="RightLeg" type="MeshInstance3D" parent="Model/DetailParts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.35, 0)
+mesh = SubResource("CapsuleMesh_limb")
+surface_material_override/0 = SubResource("StandardMaterial3D_dark")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 0.8
+path_max_distance = 50.0
+avoidance_enabled = false
+radius = 0.3
+
+[node name="AttackArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="AttackShape" type="CollisionShape3D" parent="AttackArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("SphereShape3D_attack")
+
+[node name="AttackTimer" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="body_entered" from="AttackArea" to="." method="_on_attack_area_body_entered"]
+[connection signal="body_exited" from="AttackArea" to="." method="_on_attack_area_body_exited"]
+[connection signal="timeout" from="AttackTimer" to="." method="_on_attack_timer_timeout"]

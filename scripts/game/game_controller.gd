@@ -14,6 +14,7 @@ extends Node3D
 @onready var hud_control: Control = $HUD/HUDControl
 
 var wave_manager: Node
+var zombie_horde: Node  # Centralized zombie controller for performance
 var hud: Control
 
 var player_spawn_positions: Array[Vector3] = []
@@ -119,6 +120,21 @@ func _setup_wave_manager() -> void:
 	# Pass references
 	wave_manager.zombies_container = zombies_container
 	wave_manager.spawn_positions = zombie_spawn_positions
+
+	# Setup centralized zombie horde controller (server only)
+	if multiplayer.is_server():
+		_setup_zombie_horde()
+
+
+func _setup_zombie_horde() -> void:
+	var horde_script := preload("res://scripts/enemies/zombie_horde.gd")
+	zombie_horde = Node.new()
+	zombie_horde.set_script(horde_script)
+	zombie_horde.name = "ZombieHorde"
+	add_child(zombie_horde)
+
+	# Initialize with references
+	zombie_horde.initialize(zombies_container, self)
 
 
 func _on_all_players_loaded() -> void:

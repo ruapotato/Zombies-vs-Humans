@@ -7,9 +7,18 @@ signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
 signal zombie_spawned(zombie: Node)
 
-const SPAWN_DELAY_BASE := 1.5
-const SPAWN_DELAY_MIN := 0.3
-const MAX_ACTIVE_ZOMBIES := 50
+const SPAWN_DELAY_BASE := 0.1  # Much faster spawning
+const SPAWN_DELAY_MIN := 0.02  # Can spawn up to 50/sec
+const MAX_ACTIVE_ZOMBIES := 300  # Allow more active at once
+const SPAWNS_PER_TICK := 5  # Spawn multiple zombies per tick
+
+# Set to true to use simple capsule zombies for performance testing
+const USE_SIMPLE_ZOMBIES := true
+
+# Cached zombie count to avoid get_child_count() every frame
+var cached_zombie_count: int = 0
+var zombie_count_update_timer: float = 0.0
+const ZOMBIE_COUNT_UPDATE_INTERVAL := 0.25  # Update count 4x per second
 
 # Enemy scenes - each type has its own distinct model
 var enemy_scenes: Dictionary = {
@@ -20,12 +29,15 @@ var enemy_scenes: Dictionary = {
 	"tank": preload("res://scenes/enemies/tank.tscn")
 }
 
-# Enemy type configurations
+# Simple zombie for performance testing
+var simple_zombie_scene: PackedScene = preload("res://scenes/enemies/billboard_zombie.tscn")
+
+# Enemy type configurations (reduced health for horde mode)
 var enemy_configs: Dictionary = {
 	"walker": {
 		"display_name": "Walker",
-		"base_health": 50,
-		"base_damage": 20,
+		"base_health": 20,  # Reduced from 50
+		"base_damage": 15,
 		"base_speed": 2.5,
 		"attack_rate": 1.0,
 		"point_value": 10,
@@ -34,8 +46,8 @@ var enemy_configs: Dictionary = {
 	},
 	"runner": {
 		"display_name": "Runner",
-		"base_health": 40,
-		"base_damage": 25,
+		"base_health": 15,  # Reduced from 40
+		"base_damage": 20,
 		"base_speed": 4.0,
 		"attack_rate": 0.8,
 		"point_value": 20,
@@ -44,8 +56,8 @@ var enemy_configs: Dictionary = {
 	},
 	"brute": {
 		"display_name": "Brute",
-		"base_health": 120,
-		"base_damage": 40,
+		"base_health": 50,  # Reduced from 120
+		"base_damage": 30,
 		"base_speed": 2.2,
 		"attack_rate": 1.5,
 		"point_value": 50,
@@ -54,8 +66,8 @@ var enemy_configs: Dictionary = {
 	},
 	"leaper": {
 		"display_name": "Leaper",
-		"base_health": 60,
-		"base_damage": 35,
+		"base_health": 25,  # Reduced from 60
+		"base_damage": 25,
 		"base_speed": 3.5,
 		"attack_rate": 1.2,
 		"point_value": 40,
@@ -66,8 +78,8 @@ var enemy_configs: Dictionary = {
 	},
 	"tank": {
 		"display_name": "Tank",
-		"base_health": 500,
-		"base_damage": 80,
+		"base_health": 150,  # Reduced from 500
+		"base_damage": 50,
 		"base_speed": 1.8,
 		"attack_rate": 2.0,
 		"point_value": 200,
@@ -96,6 +108,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Update cached zombie count periodically
+	zombie_count_update_timer -= delta
+	if zombie_count_update_timer <= 0:
+		zombie_count_update_timer = ZOMBIE_COUNT_UPDATE_INTERVAL
+		cached_zombie_count = zombies_container.get_child_count() if zombies_container else 0
+
 	if not is_spawning:
 		return
 
@@ -103,14 +121,20 @@ func _process(delta: float) -> void:
 		is_spawning = false
 		return
 
-	# Check if we can spawn more
-	var active_zombies := zombies_container.get_child_count() if zombies_container else 0
-	if active_zombies >= MAX_ACTIVE_ZOMBIES:
+	# Check if we can spawn more (use cached count)
+	if cached_zombie_count >= MAX_ACTIVE_ZOMBIES:
 		return
 
 	spawn_timer -= delta
 	if spawn_timer <= 0:
-		_spawn_zombie()
+		# Spawn multiple zombies per tick for faster spawning
+		var spawn_count := mini(SPAWNS_PER_TICK, zombies_to_spawn)
+		spawn_count = mini(spawn_count, MAX_ACTIVE_ZOMBIES - cached_zombie_count)
+
+		for i in spawn_count:
+			_spawn_zombie()
+			cached_zombie_count += 1
+
 		spawn_timer = spawn_delay
 
 
@@ -128,7 +152,7 @@ func start_wave(wave_number: int) -> void:
 	spawn_delay = max(SPAWN_DELAY_MIN, SPAWN_DELAY_BASE - (wave_number * 0.1))
 
 	is_spawning = true
-	spawn_timer = 1.0  # Initial delay before first spawn
+	spawn_timer = 0.1  # Short initial delay
 
 	wave_started.emit(wave_number)
 
@@ -164,7 +188,11 @@ func _spawn_zombie() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
-	var scene: PackedScene = enemy_scenes.get(enemy_type, enemy_scenes["walker"])
+	var scene: PackedScene
+	if USE_SIMPLE_ZOMBIES:
+		scene = simple_zombie_scene
+	else:
+		scene = enemy_scenes.get(enemy_type, enemy_scenes["walker"])
 	var zombie: Node3D = scene.instantiate()
 
 	# Apply configuration using set() for compatibility
@@ -190,13 +218,25 @@ func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 	if config.has("scale"):
 		zombie.scale = config["scale"]
 
-	var mesh := zombie.get_node_or_null("MeshInstance3D") as MeshInstance3D
-	if mesh and config.has("color"):
-		var material := mesh.get_surface_override_material(0)
-		if material:
-			material = material.duplicate()
-			material.albedo_color = config["color"]
-			mesh.set_surface_override_material(0, material)
+	# Apply color to zombie
+	if config.has("color"):
+		var base_color: Color = config["color"]
+
+		# For billboard zombies - tint the sprite
+		var sprite := zombie.get_node_or_null("Sprite3D") as Sprite3D
+		if sprite:
+			# Tint toward the color while keeping some original
+			sprite.modulate = base_color.lightened(0.3)
+		else:
+			# For mesh-based zombies
+			var limb_color := base_color.darkened(0.12)
+			_apply_color_to_mesh(zombie, "Model/SimpleMesh", base_color)
+			_apply_color_to_mesh(zombie, "Model/DetailParts/Body", base_color)
+			_apply_color_to_mesh(zombie, "Model/DetailParts/Head/Mesh", base_color.lightened(0.1))
+			_apply_color_to_mesh(zombie, "Model/DetailParts/LeftArm", limb_color)
+			_apply_color_to_mesh(zombie, "Model/DetailParts/RightArm", limb_color)
+			_apply_color_to_mesh(zombie, "Model/DetailParts/LeftLeg", limb_color)
+			_apply_color_to_mesh(zombie, "Model/DetailParts/RightLeg", limb_color)
 
 	AudioManager.play_sound_3d("zombie_spawn", spawn_pos, -10.0)
 	zombie_spawned.emit(zombie)
@@ -262,9 +302,7 @@ func _get_enemy_type_for_spawn() -> String:
 
 
 func get_active_zombie_count() -> int:
-	if zombies_container:
-		return zombies_container.get_child_count()
-	return 0
+	return cached_zombie_count
 
 
 func kill_all_zombies() -> void:
@@ -274,3 +312,15 @@ func kill_all_zombies() -> void:
 	for zombie in zombies_container.get_children():
 		if zombie.has_method("die"):
 			zombie.die()
+
+
+func _apply_color_to_mesh(zombie: Node3D, path: String, color: Color) -> void:
+	var mesh := zombie.get_node_or_null(path) as MeshInstance3D
+	if not mesh:
+		return
+
+	var material := mesh.get_surface_override_material(0)
+	if material:
+		material = material.duplicate()
+		material.albedo_color = color
+		mesh.set_surface_override_material(0, material)

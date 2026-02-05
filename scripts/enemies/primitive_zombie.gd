@@ -1,37 +1,30 @@
 extends CharacterBody3D
-class_name Enemy
-## Base enemy class - can be controlled by ZombieHorde (efficient) or run individually
+class_name PrimitiveZombie
+## Primitive zombie with code-based animation - extremely lightweight
 
-signal died(enemy: Enemy, killer_id: int, is_headshot: bool)
+signal died(enemy: Node3D, killer_id: int, is_headshot: bool)
 signal damaged(amount: int, is_headshot: bool)
 
 enum EnemyState { SPAWNING, IDLE, CHASING, ATTACKING, DYING, DEAD }
 
-# Enemy type config (override in subclasses)
-@export var enemy_type: String = "dretch"
-@export var display_name: String = "Dretch"
-
-# Base stats (scaled by round)
-@export var base_health: int = 30
-@export var base_damage: int = 20
-@export var base_speed: float = 4.0
+# Enemy config
+@export var enemy_type: String = "walker"
+@export var display_name: String = "Walker"
+@export var base_health: int = 20
+@export var base_damage: int = 15
+@export var base_speed: float = 3.0
 @export var attack_rate: float = 1.0
 @export var point_value: int = 10
-
-# Enemy dimensions for damage calculation
 @export var enemy_height: float = 1.8
-@export var head_position_y: float = 1.6
-
-# Special abilities
+@export var head_position_y: float = 1.5
 @export var can_pounce: bool = false
 @export var pounce_range: float = 5.0
-@export var pounce_cooldown: float = 3.0
 
 # Runtime state
-var health: int = 30
-var max_health: int = 30
-var damage: int = 20
-var speed: float = 4.0
+var health: int = 20
+var max_health: int = 20
+var damage: int = 15
+var speed: float = 3.0
 var state: EnemyState = EnemyState.SPAWNING
 
 var target_player: Node3D = null
@@ -41,46 +34,40 @@ var last_attacker_id: int = 0
 var last_hit_was_headshot: bool = false
 var last_hit_position: Vector3 = Vector3.ZERO
 
-# Horde control - when true, ZombieHorde handles AI
+# Horde control
 var horde_controlled: bool = false
 
-# Components
-@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
+# Animation state (procedural)
+var anim_time: float = 0.0
+var walk_cycle: float = 0.0
+var is_moving: bool = false
+
+# Body parts for animation - simplified for performance
+@onready var body: MeshInstance3D = $Model/DetailParts/Body
+@onready var head: Node3D = $Model/DetailParts/Head
+@onready var left_arm: MeshInstance3D = $Model/DetailParts/LeftArm
+@onready var right_arm: MeshInstance3D = $Model/DetailParts/RightArm
+@onready var left_leg: MeshInstance3D = $Model/DetailParts/LeftLeg
+@onready var right_leg: MeshInstance3D = $Model/DetailParts/RightLeg
 @onready var model: Node3D = $Model
 @onready var attack_timer: Timer = $AttackTimer
+@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
-# Animation
-var anim_player: AnimationPlayer = null
-var current_anim: String = ""
-
-const ANIM_IDLE := "m root"
-const ANIM_RUN := "m run"
-const ANIM_DEATH := "m death"
-const ANIM_ATTACK := "swipe"
+# LOD meshes
+@onready var detail_parts: Node3D = $Model/DetailParts
+@onready var simple_mesh: MeshInstance3D = $Model/SimpleMesh
+var current_lod: int = 0  # 0 = detailed, 1 = simple
 
 
 func _ready() -> void:
-	# Find AnimationPlayer in model (may not exist for simple zombies)
-	if model:
-		_find_animation_player(model)
-		if anim_player:
-			_play_animation(ANIM_IDLE)
-		# Note: No warning if no AnimationPlayer - simple zombies don't have one
-
-	# Scale stats by round
 	_scale_stats_for_round()
-
-	# Set meta for point value
 	set_meta("point_value", point_value)
 
-	# Start spawning state briefly
 	state = EnemyState.SPAWNING
 	await get_tree().create_timer(0.3).timeout
 	if is_instance_valid(self):
 		state = EnemyState.CHASING
 
-	# Disable individual physics if horde will control us
-	# The horde manager will call set_horde_controlled(true) after spawn
 	if not multiplayer.is_server():
 		set_physics_process(false)
 
@@ -88,66 +75,128 @@ func _ready() -> void:
 func set_horde_controlled(controlled: bool) -> void:
 	horde_controlled = controlled
 	if controlled:
-		# Disable individual AI - horde handles everything
 		set_physics_process(false)
-		# Stop path update timer - horde handles paths
-		var path_timer := get_node_or_null("PathUpdateTimer") as Timer
-		if path_timer:
-			path_timer.stop()
-		# Stop sync timer - horde handles sync
-		var sync_timer := get_node_or_null("SyncTimer") as Timer
-		if sync_timer:
-			sync_timer.stop()
-
-
-func _find_animation_player(node: Node) -> void:
-	if node is AnimationPlayer:
-		anim_player = node as AnimationPlayer
-		return
-	for child in node.get_children():
-		_find_animation_player(child)
-		if anim_player:
-			return
-
-
-func _play_animation(anim_name: String, anim_speed: float = 1.0) -> void:
-	if not anim_player:
-		return
-	if current_anim == anim_name and anim_player.is_playing():
-		return
-	if anim_player.has_animation(anim_name):
-		current_anim = anim_name
-		anim_player.play(anim_name, -1, anim_speed)
 
 
 func _scale_stats_for_round() -> void:
 	var round_num := GameManager.current_round
-
 	max_health = int(GameManager.get_zombie_health_for_round(base_health))
 	health = max_health
-
 	damage = int(GameManager.get_zombie_damage_for_round(base_damage))
-
 	speed = base_speed + (round_num * 0.1)
 	speed = min(speed, base_speed * 1.5)
 
 
-# Called by horde to update animation based on movement
+# Called by horde controller to update procedural animation
 func update_animation_from_velocity() -> void:
 	var dominated_velocity := absf(velocity.x) + absf(velocity.z)
+	is_moving = dominated_velocity > 0.5
+
 	if state == EnemyState.ATTACKING:
-		return  # Don't override attack animation
-	if dominated_velocity > 0.5:
-		_play_animation(ANIM_RUN, 1.5)
+		_animate_attack()
+	elif is_moving:
+		_animate_walk()
 	else:
-		_play_animation(ANIM_IDLE)
+		_animate_idle()
 
 
-# Called by horde to stop animation for far zombies
+func set_lod(lod: int) -> void:
+	if current_lod == lod:
+		return
+	current_lod = lod
+	if lod == 0:
+		# Detailed view
+		if detail_parts:
+			detail_parts.visible = true
+		if simple_mesh:
+			simple_mesh.visible = false
+	else:
+		# Simple capsule only
+		if detail_parts:
+			detail_parts.visible = false
+		if simple_mesh:
+			simple_mesh.visible = true
+
+
+func _animate_walk() -> void:
+	anim_time += get_physics_process_delta_time() * speed * 2.0
+	walk_cycle = sin(anim_time)
+
+	# Simple LOD - just bob the whole model
+	if current_lod == 1:
+		if model:
+			model.position.y = abs(walk_cycle) * 0.03
+		return
+
+	# Body bob and slight lean forward
+	if body:
+		body.position.y = abs(walk_cycle) * 0.04
+		body.rotation.x = 0.1
+		body.rotation.z = walk_cycle * 0.03
+
+	# Head bob
+	if head:
+		head.rotation.x = sin(anim_time * 0.7) * 0.08
+
+	# Arms swing
+	if left_arm:
+		left_arm.rotation.x = walk_cycle * 0.5
+	if right_arm:
+		right_arm.rotation.x = -walk_cycle * 0.5
+
+	# Legs walk
+	if left_leg:
+		left_leg.rotation.x = -walk_cycle * 0.4
+	if right_leg:
+		right_leg.rotation.x = walk_cycle * 0.4
+
+
+func _animate_idle() -> void:
+	anim_time += get_physics_process_delta_time()
+	var sway := sin(anim_time * 1.5) * 0.02
+
+	# Simple LOD - just sway
+	if current_lod == 1:
+		if model:
+			model.rotation.z = sway
+		return
+
+	if body:
+		body.rotation.z = sway
+		body.rotation.x = 0.05
+
+	if head:
+		head.rotation.x = 0.1 + sin(anim_time * 0.8) * 0.05
+		head.rotation.y = sin(anim_time * 0.4) * 0.1
+
+	if left_arm:
+		left_arm.rotation.x = 0.2 + sin(anim_time * 1.1) * 0.05
+	if right_arm:
+		right_arm.rotation.x = 0.2 + sin(anim_time * 1.3) * 0.05
+
+	if left_leg:
+		left_leg.rotation.x = lerp(left_leg.rotation.x, 0.0, 0.1)
+	if right_leg:
+		right_leg.rotation.x = lerp(right_leg.rotation.x, 0.0, 0.1)
+
+
+func _animate_attack() -> void:
+	anim_time += get_physics_process_delta_time() * 4.0
+	var attack_phase := sin(anim_time * 5.0)
+
+	if left_arm:
+		left_arm.rotation.x = -1.3 + attack_phase * 0.3
+	if right_arm:
+		right_arm.rotation.x = -1.3 - attack_phase * 0.3
+
+	if body:
+		body.rotation.x = 0.15 + attack_phase * 0.05
+
+
 func stop_animation() -> void:
-	if anim_player and anim_player.is_playing():
-		anim_player.stop()
-	current_anim = ""
+	# Reset to neutral pose
+	anim_time = 0.0
+	is_moving = false
 
 
 func _attack_target(_delta: float) -> void:
@@ -163,8 +212,6 @@ func _perform_attack() -> void:
 	can_attack = false
 	attack_timer.wait_time = attack_rate
 	attack_timer.start()
-
-	_play_animation(ANIM_ATTACK, 2.0)
 
 	var attack_target: Node3D = null
 	for player in players_in_attack_range:
@@ -245,14 +292,13 @@ func die() -> void:
 
 	died.emit(self, last_attacker_id, last_hit_was_headshot)
 
-	if anim_player and anim_player.has_animation(ANIM_DEATH):
-		_play_animation(ANIM_DEATH)
-		await anim_player.animation_finished
-		_finish_death()
-	else:
-		var tween := create_tween()
-		tween.tween_property(model, "scale", Vector3(1, 0.1, 1), 0.3)
-		tween.tween_callback(_finish_death)
+	# Death animation - fall over
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(model, "rotation:x", -PI/2, 0.4)
+	tween.tween_property(model, "position:y", -0.5, 0.4)
+	tween.set_parallel(false)
+	tween.tween_callback(_finish_death)
 
 
 func _finish_death() -> void:
@@ -260,25 +306,19 @@ func _finish_death() -> void:
 	queue_free()
 
 
-func _on_attack_area_body_entered(body: Node3D) -> void:
-	if body.is_in_group("players"):
-		if body not in players_in_attack_range:
-			players_in_attack_range.append(body)
+func _on_attack_area_body_entered(body_node: Node3D) -> void:
+	if body_node.is_in_group("players"):
+		if body_node not in players_in_attack_range:
+			players_in_attack_range.append(body_node)
 
 
-func _on_attack_area_body_exited(body: Node3D) -> void:
-	if body in players_in_attack_range:
-		players_in_attack_range.erase(body)
+func _on_attack_area_body_exited(body_node: Node3D) -> void:
+	if body_node in players_in_attack_range:
+		players_in_attack_range.erase(body_node)
 
 
 func _on_attack_timer_timeout() -> void:
 	can_attack = true
-
-
-# Network sync for clients
-func _on_sync_timer_timeout() -> void:
-	if multiplayer.is_server() and not horde_controlled:
-		rpc("_sync_state", global_position, rotation.y, velocity, int(state))
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
@@ -289,5 +329,4 @@ func _sync_state(pos: Vector3, rot_y: float, vel: Vector3, s: int) -> void:
 	rotation.y = rot_y
 	velocity = vel
 	state = s as EnemyState
-	# Update animation on client based on state
 	update_animation_from_velocity()
