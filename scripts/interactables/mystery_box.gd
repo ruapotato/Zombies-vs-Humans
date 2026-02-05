@@ -183,9 +183,9 @@ func _display_weapon(weapon_id: String) -> void:
 	weapon_display.add_child(mesh)
 	displayed_weapon_mesh = mesh
 
-	# Floating animation
+	# Floating animation - loop enough times for grab duration
 	var tween := create_tween()
-	tween.set_loops()
+	tween.set_loops(10)  # 10 loops = 10 seconds, plenty of time
 	tween.tween_property(mesh, "position:y", 0.3, 0.5)
 	tween.tween_property(mesh, "position:y", 0.0, 0.5)
 

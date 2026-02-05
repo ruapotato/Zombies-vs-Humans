@@ -276,9 +276,9 @@ func _create_power_up_icon(power_up_type: String) -> Control:
 			label.text = "FIRE SALE"
 			label.modulate = Color.RED
 
-	# Pulsing animation
+	# Pulsing animation - loop for power-up duration
 	var tween := label.create_tween()
-	tween.set_loops()
+	tween.set_loops(30)  # 30 loops = 30 seconds, matches power-up duration
 	tween.tween_property(label, "modulate:a", 0.5, 0.5)
 	tween.tween_property(label, "modulate:a", 1.0, 0.5)
 
