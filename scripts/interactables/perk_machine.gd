@@ -2,6 +2,8 @@ extends Interactable
 class_name PerkMachine
 ## Perk machine - allows players to buy perks
 
+const InteractableTexGen = preload("res://scripts/interactables/interactable_texture_generator.gd")
+
 @export var perk_name: String = "juggernog"
 
 # Perk definitions
@@ -111,7 +113,7 @@ func _setup_perk() -> void:
 
 	# Setup billboard sprite if available
 	if sprite:
-		sprite.texture = InteractableTextureGenerator.get_perk_texture(perk_name)
+		sprite.texture = InteractableTexGen.get_perk_texture(perk_name)
 		sprite.visible = true
 		if mesh:
 			mesh.visible = false

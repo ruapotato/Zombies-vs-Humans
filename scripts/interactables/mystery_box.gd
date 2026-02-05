@@ -2,6 +2,8 @@ extends Interactable
 class_name MysteryBox
 ## Mystery Box - gives random weapons for points
 
+const InteractableTexGen = preload("res://scripts/interactables/interactable_texture_generator.gd")
+
 signal weapon_ready(weapon_id: String)
 signal box_moving
 
@@ -41,7 +43,7 @@ func _ready() -> void:
 
 	# Set up billboard sprite
 	if sprite:
-		sprite.texture = InteractableTextureGenerator.get_mystery_box_texture()
+		sprite.texture = InteractableTexGen.get_mystery_box_texture()
 		sprite.visible = true
 		if lid:
 			lid.visible = false

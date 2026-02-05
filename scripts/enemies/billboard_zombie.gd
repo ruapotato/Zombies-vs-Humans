@@ -2,6 +2,8 @@ extends CharacterBody3D
 class_name BillboardZombie
 ## Paper Mario style 2D billboard zombie - extremely fast to render
 
+const ZombieTextureGen = preload("res://scripts/enemies/zombie_texture_generator.gd")
+
 signal died(enemy: Node3D, killer_id: int, is_headshot: bool)
 signal damaged(amount: int, is_headshot: bool)
 
@@ -58,7 +60,7 @@ func _ready() -> void:
 
 	# Set zombie texture based on type
 	if sprite:
-		sprite.texture = ZombieTextureGenerator.get_zombie_texture(enemy_type)
+		sprite.texture = ZombieTextureGen.get_zombie_texture(enemy_type)
 		# Tank is bigger
 		if enemy_type == "tank":
 			sprite.pixel_size = 0.018
