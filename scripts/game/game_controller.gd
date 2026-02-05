@@ -114,8 +114,6 @@ func _setup_wave_manager() -> void:
 	# WaveManager has script attached in scene via @onready
 	# Pass references to it
 	if wave_manager:
-		print("WaveManager found, script: ", wave_manager.get_script())
-		print("Has start_wave: ", wave_manager.has_method("start_wave"))
 		wave_manager.zombies_container = zombies_container
 		wave_manager.spawn_positions = zombie_spawn_positions
 	else:
