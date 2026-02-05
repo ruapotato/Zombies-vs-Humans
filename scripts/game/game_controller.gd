@@ -111,11 +111,10 @@ func _setup_hud() -> void:
 
 
 func _setup_wave_manager() -> void:
+	# Attach script directly to the WaveManager node
 	var wave_manager_script := preload("res://scripts/enemies/wave_manager.gd")
-	wave_manager = Node.new()
-	wave_manager.set_script(wave_manager_script)
-	wave_manager.name = "WaveManagerScript"
-	$WaveManager.add_child(wave_manager)
+	$WaveManager.set_script(wave_manager_script)
+	wave_manager = $WaveManager
 
 	# Pass references
 	wave_manager.zombies_container = zombies_container
