@@ -538,16 +538,20 @@ func replace_weapon(weapon_id: String) -> void:
 func _process_health_regen(delta: float) -> void:
 	time_since_hit += delta
 
-	# Fade out damage intensity over time
-	if time_since_hit > 1.0:
-		var fade_speed := 1.5 if time_since_hit > REGEN_DELAY else 0.5
-		damage_intensity = max(0.0, damage_intensity - delta * fade_speed)
-		damage_intensity_changed.emit(damage_intensity)
-
-	# Regenerate health after delay
+	# Regenerate health after delay (CoD-style)
 	if time_since_hit >= REGEN_DELAY and health < max_health:
 		health = min(health + int(REGEN_RATE * delta), max_health)
 		health_changed.emit(health, max_health)
+
+	# Red screen matches health - only fade when health is regenerating
+	# Screen should stay red while health is low, clear when health is full
+	var health_percent := float(health) / float(max_health)
+	var target_intensity := 1.0 - health_percent  # 0% health = full red, 100% health = no red
+
+	# Smoothly transition to target
+	if damage_intensity > target_intensity:
+		damage_intensity = maxf(target_intensity, damage_intensity - delta * 2.0)
+	damage_intensity_changed.emit(damage_intensity)
 
 
 func take_damage(amount: int, _attacker: Node = null) -> void:
