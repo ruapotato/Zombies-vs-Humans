@@ -44,10 +44,10 @@ const BASE_HEALTH := 100
 const JUGGERNOG_HEALTH := 250
 const BLEEDOUT_TIME := 45.0
 const REVIVE_TIME := 4.0
-const REGEN_DELAY := 4.0  # Seconds before health starts regenerating
-const REGEN_RATE := 25.0  # Health per second when regenerating
+const REGEN_DELAY := 2.0  # Seconds before health starts regenerating (faster recovery)
+const REGEN_RATE := 50.0  # Health per second when regenerating (fast heal)
 const HITS_TO_DOWN := 4  # How many hits at full damage before going down
-const DAMAGE_COOLDOWN := 0.2  # Minimum seconds between taking damage (invincibility frames)
+const DAMAGE_COOLDOWN := 0.3  # Minimum seconds between damage (survives horde for ~1+ sec)
 
 var health: int = BASE_HEALTH
 var max_health: int = BASE_HEALTH
