@@ -457,8 +457,11 @@ func _handle_interaction() -> void:
 		return
 
 	if Input.is_action_just_pressed("interact"):
+		# Try collider first, then its parent (for nested interactables)
 		if collider.has_method("interact"):
 			collider.interact(self)
+		elif collider is Node and collider.get_parent() and collider.get_parent().has_method("interact"):
+			collider.get_parent().interact(self)
 
 
 func get_current_weapon() -> Node:
