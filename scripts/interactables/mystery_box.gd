@@ -73,14 +73,18 @@ func _process(delta: float) -> void:
 
 
 func interact(player: Node) -> bool:
+	print("MysteryBox interact called, state: ", box_state, ", waiting_player: ", waiting_player, ", player: ", player)
 	match box_state:
 		BoxState.IDLE:
 			_start_cycle(player)  # Coroutine, don't await
 			return true
 
 		BoxState.READY:
+			print("  READY state, waiting_player == player: ", waiting_player == player)
 			if waiting_player == player:
 				return _grab_weapon(player)
+			else:
+				print("  Player mismatch! waiting: ", waiting_player, " vs ", player)
 
 		_:
 			return false
