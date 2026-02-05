@@ -12,8 +12,8 @@ extends Node3D
 @onready var zombie_spawn_points: Node3D = $ZombieSpawnPoints
 @onready var navigation_region: NavigationRegion3D = $NavigationRegion3D
 @onready var hud_control: Control = $HUD/HUDControl
+@onready var wave_manager: Node = $WaveManager
 
-var wave_manager: Node
 var zombie_horde: Node  # Centralized zombie controller for performance
 var hud: Control
 
@@ -111,12 +111,15 @@ func _setup_hud() -> void:
 
 
 func _setup_wave_manager() -> void:
-	# WaveManager has script attached in scene
-	wave_manager = $WaveManager
-
-	# Pass references
-	wave_manager.zombies_container = zombies_container
-	wave_manager.spawn_positions = zombie_spawn_positions
+	# WaveManager has script attached in scene via @onready
+	# Pass references to it
+	if wave_manager:
+		print("WaveManager found, script: ", wave_manager.get_script())
+		print("Has start_wave: ", wave_manager.has_method("start_wave"))
+		wave_manager.zombies_container = zombies_container
+		wave_manager.spawn_positions = zombie_spawn_positions
+	else:
+		push_error("WaveManager node not found!")
 
 	# Setup centralized zombie horde controller (server only)
 	if multiplayer.is_server():
