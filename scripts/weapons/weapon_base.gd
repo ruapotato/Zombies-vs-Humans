@@ -206,17 +206,22 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 		var hit_normal: Vector3 = result.normal
 		var collider: Object = result.collider
 
-		# Check if headshot
-		var is_headshot := false
-		if collider and collider.has_method("get_parent") and collider.get_parent() and collider.get_parent().name == "HeadHitbox":
-			is_headshot = true
-
 		# Find the enemy node for damage calculation
 		var enemy_node: Node = null
 		if collider.has_method("take_damage"):
 			enemy_node = collider
 		elif collider.get_parent() and collider.get_parent().has_method("take_damage"):
 			enemy_node = collider.get_parent()
+
+		# Check if headshot based on hit height relative to enemy
+		var is_headshot := false
+		if enemy_node:
+			var enemy_pos: Vector3 = enemy_node.global_position
+			var head_height: float = enemy_node.get("head_position_y") if enemy_node.get("head_position_y") else 1.6
+			var head_threshold: float = 0.3  # Hit must be within 0.3 units of head height
+			var hit_height: float = hit_point.y - enemy_pos.y
+			if hit_height >= (head_height - head_threshold):
+				is_headshot = true
 
 		# Calculate final damage - pass hit_point for distance-based damage
 		var final_damage := damage
