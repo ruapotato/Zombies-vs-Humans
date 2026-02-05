@@ -103,7 +103,7 @@ var zombies_spawned: int = 0
 var is_spawning: bool = false
 
 var spawn_timer: float = 0.0
-var spawn_delay: float = SPAWN_DELAY_BASE
+var spawn_delay: float = SPAWN_DELAY_EARLY
 
 
 func _ready() -> void:

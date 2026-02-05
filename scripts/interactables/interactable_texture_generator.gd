@@ -68,7 +68,7 @@ static func _generate_perk_machine(perk_name: String) -> ImageTexture:
 	# Glowing top light
 	for y in range(4, 10):
 		for x in range(16, 32):
-			var dist := abs(x - 24) + abs(y - 7)
+			var dist: int = abs(x - 24) + abs(y - 7)
 			if dist < 10:
 				_safe_pixel(img, x, y, light if dist < 6 else main_color)
 
@@ -162,7 +162,7 @@ static func _generate_mystery_box() -> ImageTexture:
 	# Glow from inside
 	for y in range(10, 18):
 		for x in range(15, 49):
-			var intensity := 1.0 - abs(x - 32) / 20.0
+			var intensity: float = 1.0 - float(abs(x - 32)) / 20.0
 			if intensity > 0:
 				_safe_pixel(img, x, y, Color(glow.r, glow.g, glow.b, intensity * 0.7))
 
