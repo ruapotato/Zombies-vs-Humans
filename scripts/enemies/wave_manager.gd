@@ -95,6 +95,7 @@ var enemy_configs: Dictionary = {
 # References set by game controller
 var zombies_container: Node3D
 var spawn_positions: Array[Vector3] = []
+var barrier_spawn_points: Array[Dictionary] = []  # {position: Vector3, barrier: Node}
 
 # Wave state
 var current_wave: int = 0
@@ -205,15 +206,15 @@ func _spawn_zombie() -> void:
 		push_warning("No zombies container set")
 		return
 
-	if spawn_positions.is_empty():
+	if spawn_positions.is_empty() and barrier_spawn_points.is_empty():
 		push_warning("No spawn positions available")
 		return
 
 	# Determine enemy type based on wave
 	var enemy_type := _get_enemy_type_for_spawn()
 
-	# Get spawn position
-	var spawn_pos := spawn_positions[randi() % spawn_positions.size()]
+	# Get spawn position from regular spawn points (outside the playable area)
+	var spawn_pos: Vector3 = spawn_positions[randi() % spawn_positions.size()]
 
 	# Spawn on all clients
 	rpc("_spawn_enemy_at", enemy_type, spawn_pos)
@@ -373,6 +374,21 @@ func _get_enemy_type_for_spawn() -> String:
 
 func get_active_zombie_count() -> int:
 	return cached_zombie_count
+
+
+func register_barrier_spawn_points(barriers_node: Node) -> void:
+	barrier_spawn_points.clear()
+	if not barriers_node:
+		return
+
+	for barrier in barriers_node.get_children():
+		if barrier.has_method("get_spawn_position"):
+			barrier_spawn_points.append({
+				"position": barrier.get_spawn_position(),
+				"barrier": barrier
+			})
+
+	print("Registered %d barrier spawn points" % barrier_spawn_points.size())
 
 
 func kill_all_zombies() -> void:

@@ -87,6 +87,14 @@ func _load_map() -> void:
 		# Spawn interactables from map placeholders
 		if map_instance.has_node("Interactables"):
 			_spawn_interactables_from_map(map_instance.get_node("Interactables"))
+
+		# Load barriers from map
+		if map_instance.has_node("Barriers"):
+			_load_barriers_from_map(map_instance.get_node("Barriers"))
+
+		# Load doors from map (they're already instanced, just reparent them)
+		if map_instance.has_node("Doors"):
+			_load_doors_from_map(map_instance.get_node("Doors"))
 	else:
 		push_error("Map not found: %s" % map_scene_path)
 
@@ -116,6 +124,9 @@ func _setup_wave_manager() -> void:
 	if wave_manager:
 		wave_manager.zombies_container = zombies_container
 		wave_manager.spawn_positions = zombie_spawn_positions
+		# Register barrier spawn points if we have barriers
+		if barriers_container.get_child_count() > 0:
+			wave_manager.register_barrier_spawn_points(barriers_container)
 	else:
 		push_error("WaveManager node not found!")
 
@@ -231,6 +242,7 @@ func _spawn_interactables_from_map(interactables_node: Node3D) -> void:
 	var power_switch_scene: PackedScene = preload("res://scenes/interactables/power_switch.tscn")
 	var wall_weapon_scene: PackedScene = preload("res://scenes/interactables/wall_weapon.tscn")
 	var shop_machine_scene: PackedScene = preload("res://scenes/interactables/shop_machine.tscn")
+	var pack_a_punch_scene: PackedScene = preload("res://scenes/interactables/pack_a_punch.tscn")
 
 	for placeholder in interactables_node.get_children():
 		# Skip nodes that already have scripts (they're already proper instances)
@@ -267,6 +279,9 @@ func _spawn_interactables_from_map(interactables_node: Node3D) -> void:
 
 		elif "shop" in node_name:
 			instance = shop_machine_scene.instantiate() as Node3D
+
+		elif "packapunch" in node_name or "pack_a_punch" in node_name or "pap" in node_name:
+			instance = pack_a_punch_scene.instantiate() as Node3D
 
 		if instance:
 			interactables_container.add_child(instance)
@@ -314,3 +329,35 @@ func _extract_weapon_name(placeholder_name: String) -> String:
 	var name_lower := placeholder_name.to_lower()
 	name_lower = name_lower.replace("wallweapon", "").replace("wall_weapon", "").replace("wall", "")
 	return name_lower
+
+
+func _load_barriers_from_map(barriers_node: Node3D) -> void:
+	# Move barrier instances from map to barriers container
+	var barriers_to_move: Array[Node3D] = []
+	for barrier in barriers_node.get_children():
+		if barrier.is_in_group("barriers"):
+			barriers_to_move.append(barrier)
+
+	for barrier in barriers_to_move:
+		var global_xform := barrier.global_transform
+		barrier.get_parent().remove_child(barrier)
+		barriers_container.add_child(barrier)
+		barrier.global_transform = global_xform
+
+	print("Loaded %d barriers from map" % barriers_to_move.size())
+
+
+func _load_doors_from_map(doors_node: Node3D) -> void:
+	# Move door instances from map to interactables container
+	var doors_to_move: Array[Node3D] = []
+	for door in doors_node.get_children():
+		if door.is_in_group("doors") or door.is_in_group("interactables"):
+			doors_to_move.append(door)
+
+	for door in doors_to_move:
+		var global_xform := door.global_transform
+		door.get_parent().remove_child(door)
+		interactables_container.add_child(door)
+		door.global_transform = global_xform
+
+	print("Loaded %d doors from map" % doors_to_move.size())

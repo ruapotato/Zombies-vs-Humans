@@ -457,12 +457,28 @@ func _handle_interaction() -> void:
 	if not collider:
 		return
 
-	if Input.is_action_just_pressed("interact"):
-		# Try collider first, then its parent (for nested interactables)
+	# Find the interactable (could be collider or its parent)
+	var interactable: Node = null
+	if collider is Node:
 		if collider.has_method("interact"):
-			collider.interact(self)
-		elif collider is Node and collider.get_parent() and collider.get_parent().has_method("interact"):
-			collider.get_parent().interact(self)
+			interactable = collider as Node
+		elif collider.get_parent() and collider.get_parent().has_method("interact"):
+			interactable = collider.get_parent()
+
+	if not interactable:
+		return
+
+	# Check if this is a barrier (needs hold-to-repair)
+	var is_barrier := interactable.is_in_group("barriers")
+
+	if is_barrier:
+		# Barriers need holding F to repair continuously
+		if Input.is_action_pressed("interact"):
+			interactable.interact(self)
+	else:
+		# Normal interactables trigger on press
+		if Input.is_action_just_pressed("interact"):
+			interactable.interact(self)
 
 
 func get_current_weapon() -> Node:

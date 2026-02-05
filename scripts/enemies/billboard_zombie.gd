@@ -31,6 +31,7 @@ var state: EnemyState = EnemyState.SPAWNING
 
 var target_player: Node3D = null
 var players_in_attack_range: Array[Node3D] = []
+var barriers_in_attack_range: Array[Node3D] = []
 var can_attack: bool = true
 var last_attacker_id: int = 0
 var last_hit_was_headshot: bool = false
@@ -206,7 +207,21 @@ func stop_animation() -> void:
 
 
 func _attack_target(_delta: float) -> void:
-	if players_in_attack_range.is_empty():
+	# Check for valid targets (players or barriers with boards)
+	var has_player_target := false
+	for player in players_in_attack_range:
+		if is_instance_valid(player):
+			has_player_target = true
+			break
+
+	var has_barrier_target := false
+	for barrier in barriers_in_attack_range:
+		if is_instance_valid(barrier) and barrier.has_method("is_broken"):
+			if not barrier.is_broken():
+				has_barrier_target = true
+				break
+
+	if not has_player_target and not has_barrier_target:
 		state = EnemyState.CHASING
 		return
 
@@ -226,6 +241,7 @@ func _perform_attack() -> void:
 		attack_sprite.visible = true
 		attack_sprite.modulate.a = 1.0
 
+	# First priority: attack players
 	var attack_target: Node3D = null
 	for player in players_in_attack_range:
 		if is_instance_valid(player) and player.has_method("is_valid_target"):
@@ -236,6 +252,15 @@ func _perform_attack() -> void:
 	if attack_target and attack_target.has_method("take_damage"):
 		attack_target.take_damage(damage, self)
 		AudioManager.play_sound_3d("zombie_attack", global_position)
+		return
+
+	# Second priority: attack barriers
+	for barrier in barriers_in_attack_range:
+		if is_instance_valid(barrier) and barrier.has_method("break_board"):
+			if not barrier.is_broken():
+				barrier.break_board()
+				AudioManager.play_sound_3d("zombie_attack", global_position)
+				return
 
 
 func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, hit_position: Vector3 = Vector3.ZERO) -> void:
@@ -329,11 +354,16 @@ func _on_attack_area_body_entered(body_node: Node3D) -> void:
 	if body_node.is_in_group("players"):
 		if body_node not in players_in_attack_range:
 			players_in_attack_range.append(body_node)
+	elif body_node.is_in_group("barriers"):
+		if body_node not in barriers_in_attack_range:
+			barriers_in_attack_range.append(body_node)
 
 
 func _on_attack_area_body_exited(body_node: Node3D) -> void:
 	if body_node in players_in_attack_range:
 		players_in_attack_range.erase(body_node)
+	if body_node in barriers_in_attack_range:
+		barriers_in_attack_range.erase(body_node)
 
 
 func _on_attack_timer_timeout() -> void:

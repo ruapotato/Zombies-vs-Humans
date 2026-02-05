@@ -266,9 +266,18 @@ func _process_all_movement(delta: float) -> void:
 		# Calculate distance to target for LOD
 		var dist_sq := zombie.global_position.distance_squared_to(target.global_position)
 
-		# Handle attacking state
+		# Handle attacking state - check for players or barriers
 		var players_in_range: Array = zombie.get("players_in_attack_range") if "players_in_attack_range" in zombie else []
-		if not players_in_range.is_empty():
+		var barriers_in_range: Array = zombie.get("barriers_in_attack_range") if "barriers_in_attack_range" in zombie else []
+
+		var has_barrier_target := false
+		for barrier in barriers_in_range:
+			if is_instance_valid(barrier) and barrier.has_method("is_broken"):
+				if not barrier.is_broken():
+					has_barrier_target = true
+					break
+
+		if not players_in_range.is_empty() or has_barrier_target:
 			zombie.set("state", 3)  # ATTACKING
 			_process_attack(zombie, delta)
 			continue
