@@ -137,6 +137,14 @@ func set_zombie_color(color: Color) -> void:
 func update_animation_from_velocity() -> void:
 	var dominated_velocity := absf(velocity.x) + absf(velocity.z)
 
+	# Always update swipe effect timer (even when not attacking)
+	if is_attacking_anim:
+		attack_anim_time += get_physics_process_delta_time()
+		if attack_anim_time > 0.35:
+			is_attacking_anim = false
+			if attack_sprite:
+				attack_sprite.visible = false
+
 	if state == EnemyState.ATTACKING:
 		_animate_attack()
 	elif dominated_velocity > 0.5:
@@ -172,7 +180,6 @@ func _animate_idle() -> void:
 
 func _animate_attack() -> void:
 	anim_time += get_physics_process_delta_time() * 6.0
-	attack_anim_time += get_physics_process_delta_time()
 
 	if sprite:
 		# Lunge forward
@@ -181,18 +188,14 @@ func _animate_attack() -> void:
 		sprite.scale.x = 1.0 + max(0, lunge) * 0.2
 		sprite.rotation.z = lunge * 0.15
 
-	# Show swipe effect during attack
+	# Animate swipe effect
 	if attack_sprite and is_attacking_anim:
 		attack_sprite.visible = true
-		var swipe_progress := attack_anim_time * 4.0
+		var swipe_progress := attack_anim_time * 5.0
 		attack_sprite.position.x = sin(swipe_progress) * 0.4
 		attack_sprite.position.z = 0.3 + cos(swipe_progress) * 0.2
 		attack_sprite.rotation.z = swipe_progress * 2.0
-		attack_sprite.modulate.a = 1.0 - (attack_anim_time * 2.0)
-
-		if attack_anim_time > 0.5:
-			is_attacking_anim = false
-			attack_sprite.visible = false
+		attack_sprite.modulate.a = 1.0 - (attack_anim_time * 2.5)
 
 
 func stop_animation() -> void:
