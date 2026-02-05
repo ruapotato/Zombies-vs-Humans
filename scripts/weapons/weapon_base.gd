@@ -279,7 +279,9 @@ func _spawn_hit_effect(hit_position: Vector3, normal: Vector3, is_headshot: bool
 
 	# Orient effect along hit normal (optional, looks better for sparks)
 	if normal != Vector3.ZERO:
-		effect.look_at(hit_position + normal, Vector3.UP)
+		# Use FORWARD as up vector when normal is close to UP to avoid colinear warning
+		var up_vec := Vector3.FORWARD if abs(normal.dot(Vector3.UP)) > 0.9 else Vector3.UP
+		effect.look_at(hit_position + normal, up_vec)
 
 
 @rpc("any_peer", "call_remote", "unreliable")

@@ -289,7 +289,9 @@ func _process_all_movement(delta: float) -> void:
 
 		# If not visible, just teleport toward player (cheapest)
 		if not is_visible:
-			zombie.global_position += direction * speed * delta
+			var new_pos := zombie.global_position + direction * speed * delta
+			new_pos.y = target.global_position.y  # Match target's Y (ground level)
+			zombie.global_position = new_pos
 			_set_zombie_visible(zombie, false)
 			_stop_zombie_animation(zombie)
 			continue
@@ -308,7 +310,9 @@ func _process_all_movement(delta: float) -> void:
 		# Movement based on distance and limits
 		if dist_sq > LOD_FAR_DIST * LOD_FAR_DIST:
 			# VERY FAR: Direct teleport, faster
-			zombie.global_position += direction * speed * delta * 1.3
+			var new_pos := zombie.global_position + direction * speed * delta * 1.3
+			new_pos.y = target.global_position.y  # Match target's Y
+			zombie.global_position = new_pos
 			zombie.rotation.y = atan2(-direction.x, -direction.z)
 
 		elif use_physics:
@@ -331,7 +335,11 @@ func _process_all_movement(delta: float) -> void:
 
 		else:
 			# FAR or over limit: Just teleport
-			zombie.global_position += direction * speed * delta
+			var new_pos := zombie.global_position + direction * speed * delta
+			# Simple gravity: if above ground, fall toward target Y
+			if new_pos.y > target.global_position.y + 0.5:
+				new_pos.y -= 10.0 * delta  # Fall speed
+			zombie.global_position = new_pos
 
 		# Billboards don't need rotation (they face camera automatically)
 		# But we still set it for non-billboard zombies
