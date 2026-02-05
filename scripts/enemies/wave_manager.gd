@@ -7,10 +7,14 @@ signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
 signal zombie_spawned(zombie: Node)
 
-const SPAWN_DELAY_BASE := 0.1  # Much faster spawning
-const SPAWN_DELAY_MIN := 0.02  # Can spawn up to 50/sec
-const MAX_ACTIVE_ZOMBIES := 300  # Allow more active at once
-const SPAWNS_PER_TICK := 5  # Spawn multiple zombies per tick
+# Spawn timing - creates waves of intensity within rounds
+const SPAWN_DELAY_EARLY := 0.4  # Early rounds: relaxed pace to learn
+const SPAWN_DELAY_MID := 0.15  # Mid rounds: building pressure
+const SPAWN_DELAY_LATE := 0.06  # Late rounds: horde mode
+const SPAWN_DELAY_SURGE := 0.03  # Surge rounds: overwhelming
+const MAX_ACTIVE_ZOMBIES := 400  # Allow massive hordes
+const SPAWNS_PER_TICK_BASE := 3  # Base zombies per spawn tick
+const SPAWNS_PER_TICK_MAX := 8  # Max zombies per tick in late game
 
 # Set to true to use simple capsule zombies for performance testing
 const USE_SIMPLE_ZOMBIES := true
@@ -127,8 +131,9 @@ func _process(delta: float) -> void:
 
 	spawn_timer -= delta
 	if spawn_timer <= 0:
-		# Spawn multiple zombies per tick for faster spawning
-		var spawn_count := mini(SPAWNS_PER_TICK, zombies_to_spawn)
+		# Spawn multiple zombies per tick - scales with wave
+		var spawns_per_tick := _get_spawns_per_tick()
+		var spawn_count := mini(spawns_per_tick, zombies_to_spawn)
 		spawn_count = mini(spawn_count, MAX_ACTIVE_ZOMBIES - cached_zombie_count)
 
 		for i in spawn_count:
@@ -148,20 +153,51 @@ func start_wave(wave_number: int) -> void:
 	# Calculate zombies for this wave
 	zombies_to_spawn = GameManager.zombies_remaining
 
-	# Calculate spawn delay (faster in later rounds)
-	spawn_delay = max(SPAWN_DELAY_MIN, SPAWN_DELAY_BASE - (wave_number * 0.1))
+	# Dynamic spawn pacing based on wave number
+	spawn_delay = _get_spawn_delay_for_wave(wave_number)
 
 	is_spawning = true
-	spawn_timer = 0.1  # Short initial delay
+	spawn_timer = 1.0  # Brief calm before the storm
 
 	wave_started.emit(wave_number)
 
-	print("Wave %d started: %d zombies to spawn, %d spawn positions, container: %s" % [
-		wave_number,
-		zombies_to_spawn,
-		spawn_positions.size(),
-		zombies_container != null
-	])
+	# Announce special rounds
+	if GameManager.is_boss_round():
+		print("=== BOSS ROUND %d === Tank incoming with %d zombies!" % [wave_number, zombies_to_spawn])
+	elif GameManager.is_horde_surge_round():
+		print("=== HORDE SURGE %d === %d zombies incoming fast!" % [wave_number, zombies_to_spawn])
+	else:
+		print("Wave %d: %d zombies" % [wave_number, zombies_to_spawn])
+
+
+func _get_spawn_delay_for_wave(wave: int) -> float:
+	# Horde surge rounds spawn extra fast
+	if GameManager.is_horde_surge_round():
+		return SPAWN_DELAY_SURGE
+
+	# Pacing curve
+	if wave <= 3:
+		return SPAWN_DELAY_EARLY  # Relaxed early game
+	elif wave <= 7:
+		return lerpf(SPAWN_DELAY_EARLY, SPAWN_DELAY_MID, (wave - 3) / 4.0)
+	elif wave <= 12:
+		return SPAWN_DELAY_MID  # Building tension
+	elif wave <= 18:
+		return lerpf(SPAWN_DELAY_MID, SPAWN_DELAY_LATE, (wave - 12) / 6.0)
+	else:
+		return SPAWN_DELAY_LATE  # Full horde mode
+
+
+func _get_spawns_per_tick() -> int:
+	# More zombies spawn per tick in later waves
+	if current_wave <= 5:
+		return SPAWNS_PER_TICK_BASE
+	elif current_wave <= 10:
+		return SPAWNS_PER_TICK_BASE + 1
+	elif current_wave <= 15:
+		return SPAWNS_PER_TICK_BASE + 2
+	else:
+		return SPAWNS_PER_TICK_MAX
 
 
 func _spawn_zombie() -> void:
@@ -243,41 +279,64 @@ func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 
 
 func _get_enemy_type_for_spawn() -> String:
-	# Special rounds
-	if GameManager.is_special_round():
-		# Swarm round - all walkers
-		return "walker"
+	# Boss rounds spawn Tank first, then mixed horde
+	if GameManager.is_boss_round():
+		if zombies_spawned == 0:
+			AudioManager.play_sound_3d("tank_roar", Vector3.ZERO)
+			return "tank"
+		# After tank, spawn tough mix
+		var roll := randf()
+		if roll < 0.3:
+			return "brute"
+		elif roll < 0.6:
+			return "leaper"
+		elif roll < 0.9:
+			return "runner"
+		else:
+			return "walker"
 
-	# Tank round - spawn one tank
-	if GameManager.is_tyrant_round() and zombies_spawned == 0:
-		AudioManager.play_sound_3d("tank_roar", Vector3.ZERO)
-		return "tank"
+	# Horde surge rounds - fast weak zombies (quantity over quality)
+	if GameManager.is_horde_surge_round():
+		var roll := randf()
+		if roll < 0.6:
+			return "walker"
+		elif roll < 0.85:
+			return "runner"
+		else:
+			return "leaper"
 
-	# Normal wave composition based on round
+	# Normal wave composition - gradual introduction of types
 	var roll := randf()
 
-	if current_wave < 3:
-		# Early rounds - mostly walkers
+	if current_wave <= 2:
+		# Tutorial rounds - just walkers
 		return "walker"
 
-	elif current_wave < 6:
-		# Mid-early - walkers and runners
-		if roll < 0.7:
+	elif current_wave <= 4:
+		# Introduce runners
+		if roll < 0.75:
 			return "walker"
 		else:
 			return "runner"
 
-	elif current_wave < 10:
-		# Mid rounds - add brutes
-		if roll < 0.4:
+	elif current_wave <= 6:
+		# More runners, runners get dangerous
+		if roll < 0.5:
+			return "walker"
+		else:
+			return "runner"
+
+	elif current_wave <= 8:
+		# Introduce brutes
+		if roll < 0.35:
 			return "walker"
 		elif roll < 0.7:
 			return "runner"
 		else:
 			return "brute"
 
-	elif current_wave < 15:
-		# Later rounds - add leapers
+	elif current_wave <= 11:
+		# Introduce leapers
 		if roll < 0.25:
 			return "walker"
 		elif roll < 0.5:
@@ -287,13 +346,24 @@ func _get_enemy_type_for_spawn() -> String:
 		else:
 			return "leaper"
 
-	else:
-		# High rounds - all types including occasional tank
+	elif current_wave <= 15:
+		# Full variety, leaning dangerous
 		if roll < 0.15:
 			return "walker"
 		elif roll < 0.35:
 			return "runner"
-		elif roll < 0.55:
+		elif roll < 0.6:
+			return "brute"
+		else:
+			return "leaper"
+
+	else:
+		# Endgame - mostly dangerous types, occasional tank
+		if roll < 0.1:
+			return "walker"
+		elif roll < 0.25:
+			return "runner"
+		elif roll < 0.45:
 			return "brute"
 		elif roll < 0.85:
 			return "leaper"

@@ -14,12 +14,37 @@ signal power_up_collected(power_up_type: String, player_id: int)
 enum GameState { MENU, LOBBY, PLAYING, PAUSED, GAME_OVER }
 
 const MAX_PLAYERS := 4
-const BASE_ZOMBIES_PER_ROUND := 15
-const ZOMBIES_PER_PLAYER := 5
-const ZOMBIE_HEALTH_MULTIPLIER := 1.1
-const ZOMBIE_DAMAGE_MULTIPLIER := 1.05
-const TYRANT_ROUND_INTERVAL := 5
-const SPECIAL_ROUND_INTERVAL := 5
+const ZOMBIE_HEALTH_MULTIPLIER := 1.08  # Slightly slower scaling for longer games
+const ZOMBIE_DAMAGE_MULTIPLIER := 1.04
+const BOSS_ROUND_INTERVAL := 10  # Tank boss every 10 rounds
+const HORDE_SURGE_INTERVAL := 5  # Extra intense every 5 rounds
+
+# Pacing curve - zombies per round (tuned for massive horde gameplay)
+# Early game: Learn mechanics, build confidence
+# Mid game: Escalating tension, introduce new zombie types
+# Late game: MASSIVE hordes that test your limits
+const ROUND_ZOMBIE_COUNTS: Array[int] = [
+	24,    # Round 1: Warm up
+	36,    # Round 2: Getting started
+	48,    # Round 3: Finding rhythm
+	64,    # Round 4: Building up
+	100,   # Round 5: First horde surge!
+	80,    # Round 6: Brief reprieve
+	96,    # Round 7: Ramping again
+	120,   # Round 8: Getting serious
+	140,   # Round 9: Pre-boss tension
+	200,   # Round 10: BOSS ROUND - Tank + horde
+	160,   # Round 11: Post-boss cooldown
+	180,   # Round 12: Back to business
+	220,   # Round 13: Escalating
+	260,   # Round 14: Pressure building
+	350,   # Round 15: Horde surge!
+	280,   # Round 16: Sustained intensity
+	320,   # Round 17: No mercy
+	380,   # Round 18: Overwhelming
+	420,   # Round 19: Chaos
+	500,   # Round 20: BOSS ROUND - Epic battle
+]
 
 var current_state: GameState = GameState.MENU
 var current_round: int = 0
@@ -83,23 +108,41 @@ func start_next_round() -> void:
 	zombies_killed_this_round = 0
 	round_start_time = Time.get_ticks_msec() / 1000.0
 
-	# Calculate zombies for this round (exponential growth)
-	var player_count: int = max(1, players.size())
-	var round_multiplier: int = current_round * 4  # More zombies per round
-	var wave_bonus: int = int(pow(current_round, 1.2))  # Exponential growth
-	zombies_remaining = BASE_ZOMBIES_PER_ROUND + round_multiplier + wave_bonus + (player_count * ZOMBIES_PER_PLAYER)
+	# Get zombie count from pacing curve or calculate for high rounds
+	zombies_remaining = _calculate_zombies_for_round()
 
-	# Round 1 starts with 1000 zombies for stress testing
-	if current_round == 1:
-		zombies_remaining = 1000
-	# Round 2 is extra heavy - double zombies to test new weapon
-	elif current_round == 2:
-		zombies_remaining = int(zombies_remaining * 1.8)
+	# Scale for player count (more players = more zombies)
+	var player_count: int = max(1, players.size())
+	if player_count > 1:
+		zombies_remaining = int(zombies_remaining * (1.0 + (player_count - 1) * 0.5))
 
 	round_started.emit(current_round)
 
 	if multiplayer.is_server():
 		_server_start_wave_spawning()
+
+
+func _calculate_zombies_for_round() -> int:
+	# Use pacing curve for first 20 rounds
+	if current_round <= ROUND_ZOMBIE_COUNTS.size():
+		return ROUND_ZOMBIE_COUNTS[current_round - 1]
+
+	# Beyond round 20: exponential scaling from the last defined value
+	var base: int = ROUND_ZOMBIE_COUNTS[ROUND_ZOMBIE_COUNTS.size() - 1]  # 500
+	var rounds_beyond: int = current_round - ROUND_ZOMBIE_COUNTS.size()
+
+	# Add 15% more zombies per round after 20, with surge rounds
+	var scaled: int = int(base * pow(1.15, rounds_beyond))
+
+	# Horde surge bonus on multiples of 5
+	if current_round % HORDE_SURGE_INTERVAL == 0:
+		scaled = int(scaled * 1.4)
+
+	# Boss round bonus on multiples of 10
+	if current_round % BOSS_ROUND_INTERVAL == 0:
+		scaled = int(scaled * 1.25)
+
+	return mini(scaled, 2000)  # Cap at 2000 for sanity
 
 
 func _server_start_wave_spawning() -> void:
@@ -288,11 +331,32 @@ func end_round() -> void:
 	# Give all players max ammo between rounds
 	_give_round_end_rewards()
 
-	# Brief delay before next round
-	await get_tree().create_timer(5.0).timeout
+	# Dynamic break time based on round intensity
+	var break_time := _get_between_round_delay()
+	await get_tree().create_timer(break_time).timeout
 
 	if current_state == GameState.PLAYING:
 		start_next_round()
+
+
+func _get_between_round_delay() -> float:
+	# Boss rounds always get a longer break after
+	if is_boss_round():
+		return 15.0
+
+	# Short breaks early, longer breaks after intense rounds
+	var zombies_killed := zombies_killed_this_round
+
+	if zombies_killed < 50:
+		return 3.0  # Quick rounds get quick breaks
+	elif zombies_killed < 100:
+		return 5.0  # Medium rounds
+	elif zombies_killed < 200:
+		return 7.0  # Larger rounds need more recovery
+	elif zombies_killed < 350:
+		return 10.0  # Big horde - catch your breath
+	else:
+		return 12.0  # Massive round - earned a real break
 
 
 func _give_round_end_rewards() -> void:
@@ -391,12 +455,23 @@ func get_zombie_damage_for_round(base_damage: float) -> float:
 	return base_damage * pow(ZOMBIE_DAMAGE_MULTIPLIER, current_round - 1)
 
 
+func is_horde_surge_round() -> bool:
+	# Every 5 rounds is a horde surge (fast spawns, more zombies)
+	return current_round > 0 and current_round % HORDE_SURGE_INTERVAL == 0
+
+
+func is_boss_round() -> bool:
+	# Every 10 rounds has a Tank boss
+	return current_round > 0 and current_round % BOSS_ROUND_INTERVAL == 0
+
+
+# Legacy compatibility
 func is_special_round() -> bool:
-	return current_round > 0 and current_round % SPECIAL_ROUND_INTERVAL == 0
+	return is_horde_surge_round()
 
 
 func is_tyrant_round() -> bool:
-	return current_round > 0 and current_round % TYRANT_ROUND_INTERVAL == 0
+	return is_boss_round()
 
 
 func get_game_time() -> float:
