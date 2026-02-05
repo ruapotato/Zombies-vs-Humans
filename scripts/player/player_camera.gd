@@ -2,6 +2,7 @@ extends Camera3D
 ## First-person camera controller with mouse look
 
 const MOUSE_SENSITIVITY := 0.002
+const ADS_SENSITIVITY_MULTIPLIER := 0.5  # Half sensitivity when aiming
 const CONTROLLER_SENSITIVITY := 3.0
 const MAX_PITCH := 89.0
 const MIN_PITCH := -89.0
@@ -42,8 +43,13 @@ func _input(event: InputEvent) -> void:
 
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
-	yaw -= event.relative.x * MOUSE_SENSITIVITY
-	pitch -= event.relative.y * MOUSE_SENSITIVITY
+	# Reduce sensitivity when aiming down sights
+	var sensitivity := MOUSE_SENSITIVITY
+	if player.is_aiming:
+		sensitivity *= ADS_SENSITIVITY_MULTIPLIER
+
+	yaw -= event.relative.x * sensitivity
+	pitch -= event.relative.y * sensitivity
 
 	pitch = clamp(pitch, deg_to_rad(MIN_PITCH), deg_to_rad(MAX_PITCH))
 
