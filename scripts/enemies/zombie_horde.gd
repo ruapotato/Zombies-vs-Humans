@@ -84,7 +84,7 @@ func _on_zombie_added(node: Node) -> void:
 		zombie.set_horde_controlled(true)
 
 	# Set to chasing state immediately
-	zombie.state = 2  # CHASING
+	zombie.set("state", 2)  # CHASING
 
 
 func _on_zombie_removed(node: Node) -> void:
@@ -269,11 +269,11 @@ func _process_all_movement(delta: float) -> void:
 		# Handle attacking state
 		var players_in_range: Array = zombie.get("players_in_attack_range") if "players_in_attack_range" in zombie else []
 		if not players_in_range.is_empty():
-			zombie.state = 3  # ATTACKING
+			zombie.set("state", 3)  # ATTACKING
 			_process_attack(zombie, delta)
 			continue
 
-		zombie.state = 2  # CHASING
+		zombie.set("state", 2)  # CHASING
 
 		# Get direction to target (zero Y before normalizing!)
 		var direction := target.global_position - zombie.global_position
