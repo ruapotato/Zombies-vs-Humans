@@ -55,6 +55,7 @@ var is_downed := false
 var bleedout_timer := 0.0
 var revive_progress := 0.0
 var reviver: Player = null
+var regen_accumulator := 0.0  # Accumulates fractional health regen
 
 # Damage tracking for CoD-style screen effect
 var damage_intensity := 0.0  # 0-1, how red the screen is
@@ -540,15 +541,23 @@ func _process_health_regen(delta: float) -> void:
 
 	# After REGEN_DELAY: regenerate health AND fade red screen together
 	if time_since_hit >= REGEN_DELAY:
-		# Regenerate health to full
+		# Regenerate health to full (accumulate fractional HP)
 		if health < max_health:
-			health = min(health + int(REGEN_RATE * delta), max_health)
-			health_changed.emit(health, max_health)
+			regen_accumulator += REGEN_RATE * delta
+			if regen_accumulator >= 1.0:
+				var heal_amount := int(regen_accumulator)
+				regen_accumulator -= heal_amount
+				health = mini(health + heal_amount, max_health)
+				health_changed.emit(health, max_health)
+		else:
+			regen_accumulator = 0.0  # Reset when full
 
 		# Fade red screen as health regenerates
 		if damage_intensity > 0:
 			damage_intensity = maxf(0.0, damage_intensity - delta * 1.5)
 			damage_intensity_changed.emit(damage_intensity)
+	else:
+		regen_accumulator = 0.0  # Reset accumulator while taking damage
 
 
 func take_damage(amount: int, _attacker: Node = null) -> void:
