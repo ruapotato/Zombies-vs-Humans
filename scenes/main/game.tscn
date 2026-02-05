@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dh7q2v8x6m5nl"]
+[gd_scene load_steps=3 format=3 uid="uid://dh7q2v8x6m5nl"]
 
 [ext_resource type="Script" path="res://scripts/game/game_controller.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/enemies/wave_manager.gd" id="2_wave"]
 
 [node name="Game" type="Node3D"]
 script = ExtResource("1_game")
@@ -65,3 +66,4 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="WaveManager" type="Node" parent="."]
+script = ExtResource("2_wave")

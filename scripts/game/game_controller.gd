@@ -111,9 +111,7 @@ func _setup_hud() -> void:
 
 
 func _setup_wave_manager() -> void:
-	# Attach script directly to the WaveManager node
-	var wave_manager_script := preload("res://scripts/enemies/wave_manager.gd")
-	$WaveManager.set_script(wave_manager_script)
+	# WaveManager has script attached in scene
 	wave_manager = $WaveManager
 
 	# Pass references
