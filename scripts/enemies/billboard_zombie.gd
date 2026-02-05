@@ -40,15 +40,35 @@ var horde_controlled: bool = false
 # Animation
 var anim_time: float = 0.0
 var base_y: float = 0.0
+var is_attacking_anim: bool = false
+var attack_anim_time: float = 0.0
 
 @onready var sprite: Sprite3D = $Sprite3D
+@onready var attack_sprite: Sprite3D = $AttackSprite
 @onready var attack_timer: Timer = $AttackTimer
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
+
+# Attack swipe texture (cached)
+static var swipe_texture: ImageTexture = null
 
 
 func _ready() -> void:
 	_scale_stats_for_round()
 	set_meta("point_value", point_value)
+
+	# Set zombie texture based on type
+	if sprite:
+		sprite.texture = ZombieTextureGenerator.get_zombie_texture(enemy_type)
+		# Tank is bigger
+		if enemy_type == "tank":
+			sprite.pixel_size = 0.018
+
+	# Set up attack sprite
+	if attack_sprite:
+		if not swipe_texture:
+			swipe_texture = _generate_swipe_texture()
+		attack_sprite.texture = swipe_texture
+		attack_sprite.visible = false
 
 	# Randomize animation offset so zombies don't all sync
 	anim_time = randf() * TAU
@@ -61,6 +81,35 @@ func _ready() -> void:
 
 	if not multiplayer.is_server():
 		set_physics_process(false)
+
+
+func _generate_swipe_texture() -> ImageTexture:
+	var img := Image.create(48, 32, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	var claw_color := Color(0.3, 0.25, 0.2)
+	var slash_color := Color(1.0, 0.3, 0.2, 0.8)
+
+	# Draw slashing claws
+	for i in range(3):
+		var x_start := 8 + i * 12
+		var y_start := 4 + i * 3
+		# Claw
+		for j in range(20):
+			var x := x_start + j
+			var y := y_start + int(j * 0.8)
+			for dy in range(-2, 3):
+				if x < 48 and y + dy < 32 and y + dy >= 0:
+					img.set_pixel(x, y + dy, claw_color if abs(dy) < 2 else slash_color)
+
+		# Slash trail
+		for j in range(15):
+			var x := x_start + j + 5
+			var y := y_start + int(j * 0.8) + 2
+			if x < 48 and y < 32:
+				img.set_pixel(x, y, Color(slash_color.r, slash_color.g, slash_color.b, 0.5 - j * 0.03))
+
+	return ImageTexture.create_from_image(img)
 
 
 func set_horde_controlled(controlled: bool) -> void:
@@ -121,6 +170,7 @@ func _animate_idle() -> void:
 
 func _animate_attack() -> void:
 	anim_time += get_physics_process_delta_time() * 6.0
+	attack_anim_time += get_physics_process_delta_time()
 
 	if sprite:
 		# Lunge forward
@@ -129,9 +179,25 @@ func _animate_attack() -> void:
 		sprite.scale.x = 1.0 + max(0, lunge) * 0.2
 		sprite.rotation.z = lunge * 0.15
 
+	# Show swipe effect during attack
+	if attack_sprite and is_attacking_anim:
+		attack_sprite.visible = true
+		var swipe_progress := attack_anim_time * 4.0
+		attack_sprite.position.x = sin(swipe_progress) * 0.4
+		attack_sprite.position.z = 0.3 + cos(swipe_progress) * 0.2
+		attack_sprite.rotation.z = swipe_progress * 2.0
+		attack_sprite.modulate.a = 1.0 - (attack_anim_time * 2.0)
+
+		if attack_anim_time > 0.5:
+			is_attacking_anim = false
+			attack_sprite.visible = false
+
 
 func stop_animation() -> void:
 	anim_time = randf() * TAU
+	is_attacking_anim = false
+	if attack_sprite:
+		attack_sprite.visible = false
 
 
 func _attack_target(_delta: float) -> void:
@@ -147,6 +213,13 @@ func _perform_attack() -> void:
 	can_attack = false
 	attack_timer.wait_time = attack_rate
 	attack_timer.start()
+
+	# Trigger swipe animation
+	is_attacking_anim = true
+	attack_anim_time = 0.0
+	if attack_sprite:
+		attack_sprite.visible = true
+		attack_sprite.modulate.a = 1.0
 
 	var attack_target: Node3D = null
 	for player in players_in_attack_range:

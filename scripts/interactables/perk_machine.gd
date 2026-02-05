@@ -65,6 +65,10 @@ const PERKS: Dictionary = {
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var label: Label3D = $Label3D
 @onready var light: OmniLight3D = $Light
+@onready var sprite: Sprite3D = $Sprite3D
+
+# Animation
+var anim_time: float = 0.0
 
 
 func _ready() -> void:
@@ -73,7 +77,21 @@ func _ready() -> void:
 	requires_power = true
 	one_time_use = false
 
+	anim_time = randf() * TAU
 	_setup_perk()
+
+
+func _process(delta: float) -> void:
+	if not is_usable:
+		return
+
+	# Gentle idle animation for sprite
+	anim_time += delta
+	if sprite and sprite.visible:
+		sprite.position.y = 1.0 + sin(anim_time * 2.0) * 0.03
+		# Glow pulse
+		var pulse := 0.8 + sin(anim_time * 3.0) * 0.2
+		sprite.modulate.a = pulse
 
 
 func _setup_perk() -> void:
@@ -91,13 +109,22 @@ func _setup_perk() -> void:
 
 	interaction_prompt = "Buy %s" % perk_data["display_name"]
 
-	# Set color
-	var material := StandardMaterial3D.new()
-	material.albedo_color = perk_data["color"]
-	mesh.set_surface_override_material(0, material)
+	# Setup billboard sprite if available
+	if sprite:
+		sprite.texture = InteractableTextureGenerator.get_perk_texture(perk_name)
+		sprite.visible = true
+		if mesh:
+			mesh.visible = false
+	elif mesh:
+		# Fallback to mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = perk_data["color"]
+		mesh.set_surface_override_material(0, material)
 
-	light.light_color = perk_data["color"]
-	label.text = perk_data["display_name"]
+	if light:
+		light.light_color = perk_data["color"]
+	if label:
+		label.text = perk_data["display_name"]
 
 
 func _on_interacted(player: Node) -> void:

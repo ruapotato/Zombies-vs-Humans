@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://billboard_zombie_fast"]
+[gd_scene load_steps=4 format=3 uid="uid://billboard_zombie_fast"]
 
 [ext_resource type="Script" path="res://scripts/enemies/billboard_zombie.gd" id="1_script"]
 
@@ -8,85 +8,6 @@ height = 1.6
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_attack"]
 radius = 1.0
-
-[sub_resource type="GDScript" id="GDScript_texture_gen"]
-script/source = "extends Sprite3D
-
-func _ready() -> void:
-	texture = _generate_zombie_texture()
-	pixel_size = 0.012
-	billboard = BaseMaterial3D.BILLBOARD_ENABLED
-
-func _generate_zombie_texture() -> ImageTexture:
-	var img := Image.create(64, 96, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var body_color := Color(0.4, 0.55, 0.35, 1.0)
-	var dark_color := Color(0.3, 0.42, 0.28, 1.0)
-	var eye_color := Color(0.9, 0.2, 0.2, 1.0)
-
-	# Head (circle at top)
-	_draw_circle(img, 32, 16, 12, body_color)
-
-	# Eyes
-	_draw_circle(img, 26, 14, 3, dark_color)
-	_draw_circle(img, 38, 14, 3, dark_color)
-	_draw_circle(img, 26, 14, 2, eye_color)
-	_draw_circle(img, 38, 14, 2, eye_color)
-
-	# Mouth (jagged)
-	for x in range(24, 41):
-		var y_off := (x % 3)
-		img.set_pixel(x, 22 + y_off, dark_color)
-		img.set_pixel(x, 23 + y_off, dark_color)
-
-	# Body (rectangle with rough edges)
-	for y in range(28, 70):
-		var width := 18 - int(abs(y - 45) * 0.15)
-		var x_off := randi() % 2
-		for x in range(32 - width + x_off, 32 + width + x_off):
-			if x >= 0 and x < 64:
-				img.set_pixel(x, y, body_color if (x + y) % 7 != 0 else dark_color)
-
-	# Left arm
-	for y in range(32, 60):
-		var x_base := 14 + int((y - 32) * 0.2)
-		for x in range(x_base - 4, x_base + 3):
-			if x >= 0 and x < 64 and y < 96:
-				img.set_pixel(x, y, dark_color)
-
-	# Right arm
-	for y in range(32, 58):
-		var x_base := 49 - int((y - 32) * 0.15)
-		for x in range(x_base - 3, x_base + 4):
-			if x >= 0 and x < 64 and y < 96:
-				img.set_pixel(x, y, dark_color)
-
-	# Left leg
-	for y in range(68, 94):
-		var x_base := 24 + int((y - 68) * 0.1)
-		for x in range(x_base - 5, x_base + 3):
-			if x >= 0 and x < 64:
-				img.set_pixel(x, y, dark_color)
-
-	# Right leg
-	for y in range(68, 92):
-		var x_base := 40 - int((y - 68) * 0.05)
-		for x in range(x_base - 3, x_base + 5):
-			if x >= 0 and x < 64:
-				img.set_pixel(x, y, dark_color)
-
-	var tex := ImageTexture.create_from_image(img)
-	return tex
-
-func _draw_circle(img: Image, cx: int, cy: int, radius: int, color: Color) -> void:
-	for y in range(cy - radius, cy + radius + 1):
-		for x in range(cx - radius, cx + radius + 1):
-			if x >= 0 and x < img.get_width() and y >= 0 and y < img.get_height():
-				var dist := sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy))
-				if dist <= radius:
-					img.set_pixel(x, y, color)
-"
 
 [node name="BillboardZombie" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
@@ -99,9 +20,14 @@ shape = SubResource("CapsuleShape3D_col")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-pixel_size = 0.012
+pixel_size = 0.015
 billboard = 1
-script = SubResource("GDScript_texture_gen")
+
+[node name="AttackSprite" type="Sprite3D" parent="."]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0.3)
+pixel_size = 0.02
+billboard = 1
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5

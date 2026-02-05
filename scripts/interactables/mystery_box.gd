@@ -24,9 +24,11 @@ var waiting_player: Node = null
 @onready var grab_timer: Timer = $GrabTimer
 @onready var label: Label3D = $Label3D
 @onready var light: OmniLight3D = $Light
+@onready var sprite: Sprite3D = $Sprite3D
 
 var displayed_weapon_mesh: Node3D = null
 var cycle_count: int = 0
+var anim_time: float = 0.0
 
 
 func _ready() -> void:
@@ -37,13 +39,35 @@ func _ready() -> void:
 	requires_power = false
 	one_time_use = false
 
+	# Set up billboard sprite
+	if sprite:
+		sprite.texture = InteractableTextureGenerator.get_mystery_box_texture()
+		sprite.visible = true
+		if lid:
+			lid.visible = false
 
-func _process(_delta: float) -> void:
+	anim_time = randf() * TAU
+
+
+func _process(delta: float) -> void:
 	# Update cost based on fire sale
 	if GameManager.is_power_up_active("fire_sale"):
 		cost = FIRE_SALE_COST
 	else:
 		cost = NORMAL_COST
+
+	# Animate sprite
+	anim_time += delta
+	if sprite and sprite.visible:
+		# Gentle float
+		sprite.position.y = 0.5 + sin(anim_time * 1.5) * 0.05
+		# Glow when ready
+		if box_state == BoxState.READY:
+			sprite.modulate = Color(1, 1, 1, 0.8 + sin(anim_time * 6.0) * 0.2)
+		elif box_state == BoxState.CYCLING:
+			sprite.modulate = Color(1, 1, 1, 0.7 + sin(anim_time * 10.0) * 0.3)
+		else:
+			sprite.modulate = Color.WHITE
 
 
 func interact(player: Node) -> bool:
