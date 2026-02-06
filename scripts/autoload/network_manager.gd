@@ -292,7 +292,6 @@ func _spawn_player_at(peer_id: int, spawn_position: Vector3) -> void:
 	player.name = "Player_%d" % peer_id
 	player.set_multiplayer_authority(peer_id)
 	player.set("player_id", peer_id)
-	player.global_position = spawn_position
 
 	if peer_id in connected_players:
 		player.set("player_name", connected_players[peer_id].get("name", "Player"))
@@ -301,6 +300,7 @@ func _spawn_player_at(peer_id: int, spawn_position: Vector3) -> void:
 	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Players"):
 		game_scene.get_node("Players").add_child(player)
+		player.global_position = spawn_position
 
 	GameManager.register_player(peer_id, player)
 

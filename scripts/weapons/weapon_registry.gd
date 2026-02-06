@@ -93,6 +93,26 @@ static var WEAPONS: Dictionary = {
 		"fire_sound": "smg_fire"
 	},
 
+	"uzi": {
+		"weapon_id": "uzi",
+		"display_name": "Mini-Uzi",
+		"weapon_type": WeaponDataScript.WeaponType.SMG,
+		"base_damage": 35,
+		"fire_rate": 0.06,
+		"is_automatic": true,
+		"magazine_size": 32,
+		"reserve_ammo": 192,
+		"max_reserve": 192,
+		"reload_time": 1.8,
+		"spread": 2.5,
+		"aim_spread": 1.0,
+		"recoil": 0.025,
+		"wall_cost": 800,
+		"ammo_cost": 400,
+		"pap_name": "Micro-Uzi",
+		"fire_sound": "smg_fire"
+	},
+
 	"ak47": {
 		"weapon_id": "ak47",
 		"display_name": "AK-47",
