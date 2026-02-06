@@ -286,6 +286,8 @@ func _spawn_hit_effect(hit_position: Vector3, normal: Vector3, is_headshot: bool
 
 @rpc("any_peer", "call_remote", "unreliable")
 func _sync_shoot() -> void:
+	if owner_player and multiplayer.get_remote_sender_id() != owner_player.get_multiplayer_authority():
+		return
 	# Play effects for other players
 	_play_fire_effects()
 

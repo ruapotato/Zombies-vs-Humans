@@ -150,6 +150,10 @@ func _on_ready_toggled(toggled_on: bool) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_ready_state(peer_id: int, is_ready: bool) -> void:
+	# Validate sender matches the peer_id they claim to set
+	var sender := multiplayer.get_remote_sender_id()
+	if sender != 0 and sender != peer_id:
+		return
 	player_ready_states[peer_id] = is_ready
 	_refresh_player_list()
 

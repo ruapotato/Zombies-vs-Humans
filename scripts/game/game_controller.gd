@@ -25,6 +25,7 @@ var spawn_index := 0
 func _ready() -> void:
 	# Connect to network events
 	NetworkManager.all_players_loaded.connect(_on_all_players_loaded)
+	NetworkManager.player_disconnected.connect(_on_player_disconnected)
 
 	# Connect to game events
 	GameManager.round_started.connect(_on_round_started)
@@ -64,14 +65,10 @@ func _load_map() -> void:
 	var map_name: String = str(NetworkManager.server_info.get("map", "nacht"))
 	var map_scene_path: String = MapManager.get_map_scene_path(map_name)
 
-	print("Loading map: %s from path: %s" % [map_name, map_scene_path])
-	print("ResourceLoader.exists: %s" % ResourceLoader.exists(map_scene_path))
-
 	if ResourceLoader.exists(map_scene_path):
 		var map_scene: PackedScene = load(map_scene_path) as PackedScene
 		var map_instance: Node3D = map_scene.instantiate() as Node3D
 		map_container.add_child(map_instance)
-		print("Map loaded successfully: %s" % map_instance.name)
 
 		# Update spawn points from map
 		if map_instance.has_node("SpawnPoints"):
@@ -104,6 +101,8 @@ func _load_map() -> void:
 		player_spawn_positions.append(Vector3(2, 1, 0))
 		player_spawn_positions.append(Vector3(-2, 1, 0))
 		player_spawn_positions.append(Vector3(0, 1, 2))
+		player_spawn_positions.append(Vector3(2, 1, 2))
+		player_spawn_positions.append(Vector3(-2, 1, 2))
 
 	if zombie_spawn_positions.is_empty():
 		zombie_spawn_positions.append(Vector3(10, 0, 10))
@@ -147,18 +146,15 @@ func _setup_zombie_horde() -> void:
 
 
 func _on_all_players_loaded() -> void:
-	print("All players loaded, is_server: ", multiplayer.is_server())
 	if multiplayer.is_server():
 		_spawn_all_players()
 
 
 func _spawn_all_players() -> void:
 	spawn_index = 0
-	print("Spawning all players, count: ", NetworkManager.connected_players.size())
 
 	for peer_id: int in NetworkManager.connected_players:
 		var spawn_pos := _get_next_spawn_position()
-		print("Spawning player %d at %s" % [peer_id, spawn_pos])
 		NetworkManager.spawn_player(peer_id, spawn_pos)
 
 
@@ -169,6 +165,16 @@ func _get_next_spawn_position() -> Vector3:
 	var pos := player_spawn_positions[spawn_index % player_spawn_positions.size()]
 	spawn_index += 1
 	return pos
+
+
+func _on_player_disconnected(peer_id: int) -> void:
+	if multiplayer.is_server():
+		NetworkManager.despawn_player(peer_id)
+
+		# Check if all remaining players are downed or no players left
+		if GameManager.current_state == GameManager.GameState.PLAYING:
+			if GameManager.players.is_empty() or GameManager.all_players_downed():
+				GameManager.trigger_game_over()
 
 
 func _on_round_started(round_number: int) -> void:
@@ -216,7 +222,7 @@ func get_random_zombie_spawn() -> Vector3:
 	if zombie_spawn_positions.is_empty():
 		return Vector3(10, 0, 10)
 
-	return zombie_spawn_positions[randi() % zombie_spawn_positions.size()]
+	return zombie_spawn_positions[randi_range(0, zombie_spawn_positions.size() - 1)]
 
 
 func get_nearest_player_to(position: Vector3) -> Node3D:
@@ -286,7 +292,6 @@ func _spawn_interactables_from_map(interactables_node: Node3D) -> void:
 		if instance:
 			interactables_container.add_child(instance)
 			instance.transform = spawn_transform
-			print("Spawned interactable: %s at %s" % [placeholder.name, spawn_transform.origin])
 
 
 func _extract_perk_name(placeholder_name: String) -> String:
@@ -344,7 +349,6 @@ func _load_barriers_from_map(barriers_node: Node3D) -> void:
 		barriers_container.add_child(barrier)
 		barrier.global_transform = global_xform
 
-	print("Loaded %d barriers from map" % barriers_to_move.size())
 
 
 func _load_doors_from_map(doors_node: Node3D) -> void:
@@ -360,4 +364,3 @@ func _load_doors_from_map(doors_node: Node3D) -> void:
 		interactables_container.add_child(door)
 		door.global_transform = global_xform
 
-	print("Loaded %d doors from map" % doors_to_move.size())

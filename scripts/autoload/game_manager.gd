@@ -14,7 +14,7 @@ signal power_activated
 
 enum GameState { MENU, LOBBY, PLAYING, PAUSED, GAME_OVER }
 
-const MAX_PLAYERS := 4
+const MAX_PLAYERS := 6
 const ZOMBIE_HEALTH_MULTIPLIER := 1.08  # Slightly slower scaling for longer games
 const ZOMBIE_DAMAGE_MULTIPLIER := 1.06
 const BOSS_ROUND_INTERVAL := 10  # Tank boss every 10 rounds

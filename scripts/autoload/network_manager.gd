@@ -12,7 +12,7 @@ signal game_starting
 signal all_players_loaded
 
 const DEFAULT_PORT := 7777
-const MAX_CLIENTS := 4
+const MAX_CLIENTS := 6
 
 var peer: ENetMultiplayerPeer = null
 var connected_players: Dictionary = {}  # peer_id -> player_info
@@ -252,10 +252,20 @@ func _player_loaded() -> void:
 	_on_player_loaded(sender_id)
 
 
+var _load_timeout_timer: SceneTreeTimer = null
+
 func _on_player_loaded(loaded_peer_id: int) -> void:
 	players_loaded[loaded_peer_id] = true
 
-	# Check if all players are loaded
+	# Start timeout on first player loaded
+	if _load_timeout_timer == null:
+		_load_timeout_timer = get_tree().create_timer(30.0)
+		_load_timeout_timer.timeout.connect(_on_load_timeout)
+
+	_check_all_players_loaded()
+
+
+func _check_all_players_loaded() -> void:
 	var all_loaded: bool = true
 	for pid: int in connected_players:
 		if not players_loaded.get(pid, false):
@@ -263,7 +273,31 @@ func _on_player_loaded(loaded_peer_id: int) -> void:
 			break
 
 	if all_loaded:
+		_load_timeout_timer = null
 		rpc("_all_players_loaded")
+
+
+func _on_load_timeout() -> void:
+	_load_timeout_timer = null
+	if not multiplayer.is_server():
+		return
+
+	# Kick players that haven't loaded
+	var unloaded: Array[int] = []
+	for pid: int in connected_players:
+		if not players_loaded.get(pid, false):
+			unloaded.append(pid)
+
+	for pid: int in unloaded:
+		push_warning("Player %d timed out during loading, removing" % pid)
+		connected_players.erase(pid)
+		players_loaded.erase(pid)
+		player_disconnected.emit(pid)
+		if pid != 1:
+			peer.disconnect_peer(pid)
+
+	# Proceed with loaded players
+	_check_all_players_loaded()
 
 
 @rpc("authority", "call_local", "reliable")
@@ -334,6 +368,10 @@ func send_chat_message(message: String) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _receive_chat_message(sender_id: int, sender_name: String, message: String) -> void:
+	# Validate sender matches claimed ID (0 = local call)
+	var remote := multiplayer.get_remote_sender_id()
+	if remote != 0 and remote != sender_id:
+		return
 	chat_message_received.emit(sender_id, sender_name, message)
 
 

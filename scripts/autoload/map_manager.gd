@@ -18,7 +18,7 @@ const DEFAULT_MAP_DATA := {
 	"display_name": "",
 	"description": "",
 	"author": "Unknown",
-	"max_players": 4,
+	"max_players": 6,
 	"difficulty": 1,  # 1-5
 	"spawn_points": [],  # Player spawn positions
 	"zombie_spawn_points": [],  # Zombie spawn positions
@@ -181,7 +181,7 @@ func get_random_zombie_spawn() -> Vector3:
 	if spawn_points.is_empty():
 		return Vector3.ZERO
 
-	return spawn_points[randi() % spawn_points.size()]
+	return spawn_points[randi_range(0, spawn_points.size() - 1)]
 
 
 func get_random_player_spawn() -> Vector3:
@@ -189,7 +189,7 @@ func get_random_player_spawn() -> Vector3:
 	if spawn_points.is_empty():
 		return Vector3.ZERO
 
-	return spawn_points[randi() % spawn_points.size()]
+	return spawn_points[randi_range(0, spawn_points.size() - 1)]
 
 
 # Create map data file for a new map

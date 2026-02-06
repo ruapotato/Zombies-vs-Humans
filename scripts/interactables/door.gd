@@ -38,9 +38,27 @@ func interact(player: Node) -> bool:
 		return false
 
 	player.spend_points(door_cost)
-	open_door()
+
+	# Server opens directly; clients request server to open
+	if multiplayer.is_server():
+		_open_door_networked()
+	else:
+		rpc_id(1, "_request_open_door")
 
 	return true
+
+
+@rpc("any_peer", "reliable")
+func _request_open_door() -> void:
+	if not multiplayer.is_server():
+		return
+	_open_door_networked()
+
+
+func _open_door_networked() -> void:
+	if is_open:
+		return
+	rpc("_sync_open")
 
 
 func open_door() -> void:
@@ -78,12 +96,8 @@ func _finish_open() -> void:
 
 	door_opened.emit(self)
 
-	# Sync to network
-	if multiplayer.is_server():
-		rpc("_sync_open")
 
-
-@rpc("authority", "call_remote", "reliable")
+@rpc("authority", "call_local", "reliable")
 func _sync_open() -> void:
 	if not is_open:
 		open_door()

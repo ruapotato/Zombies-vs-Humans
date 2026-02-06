@@ -1450,6 +1450,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 1, -10)
 [node name="PlayerSpawn4" type="Marker3D" parent="SpawnPoints"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -10)
 
+[node name="PlayerSpawn5" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 1, -12.5)
+
+[node name="PlayerSpawn6" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 1, -12.5)
+
 [node name="ZombieSpawnPoints" type="Node3D" parent="."]
 
 [node name="ZombieSpawn1" type="Marker3D" parent="ZombieSpawnPoints"]

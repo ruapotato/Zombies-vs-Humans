@@ -104,8 +104,6 @@ const ANIM_GUN_HOLD := "gun_hold_arms"  # Upper body arms
 
 
 func _ready() -> void:
-	print("=== PLAYER _ready() called, authority: ", is_multiplayer_authority(), " ===")
-
 	# Find AnimationPlayer and Skeleton in model
 	if model:
 		_find_animation_player(model)
@@ -145,14 +143,6 @@ func _find_animation_player(node: Node) -> void:
 func _find_skeleton(node: Node) -> void:
 	if node is Skeleton3D:
 		skeleton = node as Skeleton3D
-		# Print all bone names to help find hand bone
-		print("=== Skeleton bones ===")
-		for i in range(skeleton.get_bone_count()):
-			var name: String = skeleton.get_bone_name(i)
-			if "hand" in name.to_lower():
-				print("  [", i, "] ", name, " <-- HAND")
-			elif "arm" in name.to_lower():
-				print("  [", i, "] ", name, " <-- ARM")
 		return
 	for child in node.get_children():
 		_find_skeleton(child)
@@ -198,7 +188,6 @@ func _setup_animation_tree() -> void:
 	var arm_keywords := ["shoulder", "arm", "hand", "finger", "thumb", "index", "middle", "ring", "pinky", "wrist"]
 	if anim_player.has_animation(ANIM_GUN_HOLD):
 		var gun_anim: Animation = anim_player.get_animation(ANIM_GUN_HOLD)
-		print("Setting up blend filter from ", gun_anim.get_track_count(), " tracks")
 		var filtered_count := 0
 		for i: int in range(gun_anim.get_track_count()):
 			var track_path: NodePath = gun_anim.track_get_path(i)
@@ -214,8 +203,6 @@ func _setup_animation_tree() -> void:
 			if is_arm:
 				blend_node.set_filter_path(track_path, true)
 				filtered_count += 1
-				print("  Filter: ", track_path)
-		print("Filtered ", filtered_count, " arm tracks")
 
 	# Connect nodes
 	blend_tree.connect_node("Blend", 0, "Lower")  # Base (unfiltered bones)
@@ -227,7 +214,6 @@ func _setup_animation_tree() -> void:
 
 	# Activate
 	anim_tree.active = true
-	print("AnimationTree with Blend2 filter setup complete")
 
 
 func _set_lower_animation(anim_name: String) -> void:
@@ -444,6 +430,8 @@ func _switch_weapon() -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _sync_weapon_switch(index: int) -> void:
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
 	current_weapon_index = index
 	for i: int in range(weapons.size()):
 		weapons[i].visible = (i == current_weapon_index)
@@ -489,7 +477,6 @@ func get_current_weapon() -> Node:
 
 func _give_starting_weapon() -> void:
 	# Give M1911 pistol
-	print("Player _give_starting_weapon called, weapon_holder: ", weapon_holder)
 	if not weapon_holder:
 		push_error("weapon_holder is null!")
 		return
@@ -522,7 +509,6 @@ func give_weapon(weapon_id_to_give: String) -> bool:
 	weapon.visible = (weapons.size() - 1 == current_weapon_index)
 
 	weapon_changed.emit(get_current_weapon())
-	print("Gave weapon: %s, owner: %s" % [weapon_id_to_give, weapon.owner_player])
 	return true
 
 
@@ -549,7 +535,6 @@ func replace_weapon(weapon_id: String) -> void:
 	weapons[current_weapon_index] = weapon
 
 	weapon_changed.emit(weapon)
-	print("Replaced weapon with: %s, owner: %s" % [weapon_id, weapon.owner_player])
 
 
 func _process_health_regen(delta: float) -> void:
@@ -606,8 +591,11 @@ func _go_down() -> void:
 	bleedout_timer = BLEEDOUT_TIME
 	revive_progress = 0.0
 
-	# Quick Revive solo self-revive check
-	if has_perk("quick_revive") and GameManager.players.size() == 1:
+	# Broadcast downed state to all peers immediately
+	rpc("_sync_downed_state", true)
+
+	# Quick Revive solo self-revive: triggers when no other alive players can revive you
+	if has_perk("quick_revive") and GameManager.get_alive_players().size() == 0:
 		# Auto self-revive after delay
 		await get_tree().create_timer(3.0).timeout
 		if is_downed:
@@ -623,6 +611,16 @@ func _go_down() -> void:
 		_check_all_players_down()
 	else:
 		rpc_id(1, "_notify_player_downed")
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _sync_downed_state(downed: bool) -> void:
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
+	is_downed = downed
+	if downed:
+		health = 0
+	health_changed.emit(health, max_health)
 
 
 @rpc("any_peer", "reliable")
@@ -680,6 +678,9 @@ func _revive() -> void:
 	revived.emit()
 	AudioManager.play_sound_3d("player_revived", global_position)
 
+	# Broadcast revived state
+	rpc("_sync_downed_state", false)
+
 
 func _die() -> void:
 	is_downed = true
@@ -736,6 +737,8 @@ func add_perk(perk_name: String) -> bool:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _sync_add_perk(perk_name: String) -> void:
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
 	if perk_name not in perks:
 		perks.append(perk_name)
 		_apply_perk_effect(perk_name)
@@ -752,6 +755,8 @@ func remove_perk(perk_name: String) -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _sync_remove_perk(perk_name: String) -> void:
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
 	if perk_name in perks:
 		perks.erase(perk_name)
 		_remove_perk_effect(perk_name)
@@ -823,6 +828,8 @@ func _on_sync_timer_timeout() -> void:
 @rpc("any_peer", "call_remote", "unreliable_ordered")
 func _sync_state(pos: Vector3, yaw: float, pitch: float, vel: Vector3, hp: int, down: bool) -> void:
 	if is_multiplayer_authority():
+		return
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
 		return
 
 	# Interpolate position
