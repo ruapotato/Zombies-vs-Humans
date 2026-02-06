@@ -10,12 +10,13 @@ signal player_left(player_id: int)
 signal zombie_killed(zombie: Node, killer_id: int, points: int)
 signal power_up_spawned(power_up: Node)
 signal power_up_collected(power_up_type: String, player_id: int)
+signal power_activated
 
 enum GameState { MENU, LOBBY, PLAYING, PAUSED, GAME_OVER }
 
 const MAX_PLAYERS := 4
 const ZOMBIE_HEALTH_MULTIPLIER := 1.08  # Slightly slower scaling for longer games
-const ZOMBIE_DAMAGE_MULTIPLIER := 1.04
+const ZOMBIE_DAMAGE_MULTIPLIER := 1.06
 const BOSS_ROUND_INTERVAL := 10  # Tank boss every 10 rounds
 const HORDE_SURGE_INTERVAL := 5  # Extra intense every 5 rounds
 
@@ -158,8 +159,8 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool, hit_posit
 	zombies_killed_this_round += 1
 	total_zombies_killed += 1
 
-	# Calculate points - headshot = 50, body = 10
-	var points: int = 50 if is_headshot else 10
+	# Calculate points - headshot = 100, body = 50
+	var points: int = 100 if is_headshot else 50
 
 	if is_headshot:
 		if killer_id in player_stats:
@@ -188,9 +189,6 @@ func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool, hit_posit
 
 	# Check for round end
 	if zombies_remaining <= 0:
-		# Round 1 complete - give all players a better weapon for round 2
-		if current_round == 1:
-			_give_round1_reward()
 		end_round()
 
 
@@ -213,7 +211,7 @@ func spawn_power_up(position: Vector3, forced_type: String = "") -> void:
 	if power_is_on:
 		power_up_types.append("fire_sale")
 
-	var selected_type: String = forced_type if forced_type != "" else power_up_types[randi() % power_up_types.size()]
+	var selected_type: String = forced_type if forced_type != "" else power_up_types[randi_range(0, power_up_types.size() - 1)]
 
 	rpc("_spawn_power_up_at", position, selected_type)
 
@@ -365,42 +363,8 @@ func _give_round_end_rewards() -> void:
 		if player.has_method("refill_ammo"):
 			player.refill_ammo()
 
-	# Every 5 rounds, give a random new gun to all players
-	if current_round > 0 and current_round % 5 == 0:
-		_give_bonus_weapon()
-
 	# Play round end sound
 	AudioManager.play_sound_ui("round_start", 0.0)
-
-
-func _give_bonus_weapon() -> void:
-	# Pool of bonus weapons that can be given
-	var bonus_weapons: Array[String] = [
-		"mp5", "ak47", "m14", "olympia", "stakeout",
-		"rpk", "galil", "python", "spas12", "commando"
-	]
-
-	for player: Node in players.values():
-		# Only give weapon if player has room
-		if player.has_method("give_weapon") and player.weapons.size() < player.max_weapons:
-			var random_weapon: String = bonus_weapons[randi() % bonus_weapons.size()]
-			player.give_weapon(random_weapon)
-			AudioManager.play_sound_3d("purchase", player.global_position, 3.0)
-
-
-func _give_round1_reward() -> void:
-	# Give all players a good SMG or shotgun for round 2
-	var round1_rewards: Array[String] = ["mp5", "stakeout", "ak47", "m14"]
-	var reward_weapon: String = round1_rewards[randi() % round1_rewards.size()]
-
-	for player: Node in players.values():
-		if player.has_method("give_weapon"):
-			# Replace pistol or add weapon
-			if player.weapons.size() >= player.max_weapons:
-				player.replace_weapon(reward_weapon)
-			else:
-				player.give_weapon(reward_weapon)
-			AudioManager.play_sound_3d("mystery_box_weapon", player.global_position, 5.0)
 
 
 func trigger_game_over() -> void:
@@ -448,7 +412,13 @@ func all_players_downed() -> bool:
 
 
 func get_zombie_health_for_round(base_health: float) -> float:
-	return base_health * pow(ZOMBIE_HEALTH_MULTIPLIER, current_round - 1)
+	if current_round <= 10:
+		# Linear growth: +15% per round
+		return base_health * (1.0 + (current_round - 1) * 0.15)
+	else:
+		# Exponential after round 10: 1.1x per round
+		var round10_health := base_health * (1.0 + 9 * 0.15)  # = base * 2.35
+		return round10_health * pow(1.1, current_round - 10)
 
 
 func get_zombie_damage_for_round(base_damage: float) -> float:
@@ -484,6 +454,7 @@ func activate_power() -> void:
 	power_is_on = true
 	# Notify all perk machines and pack-a-punch
 	get_tree().call_group("power_dependent", "on_power_activated")
+	power_activated.emit()
 
 
 func reset_game() -> void:
@@ -498,3 +469,5 @@ func reset_game() -> void:
 	power_is_on = false
 	game_start_time = 0.0
 	round_start_time = 0.0
+	if Engine.has_singleton("ProgressionManager") or get_node_or_null("/root/ProgressionManager"):
+		ProgressionManager.reset()

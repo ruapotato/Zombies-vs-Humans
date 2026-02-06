@@ -413,6 +413,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 14)
 [node name="ZombieSpawn8" type="Marker3D" parent="ZombieSpawnPoints"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 14)
 
+[node name="ZombieSpawn9" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+
+[node name="ZombieSpawn10" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14)
+
+[node name="ZombieSpawn11" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 0)
+
+[node name="ZombieSpawn12" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
+
 [node name="Barriers" type="Node3D" parent="."]
 
 [node name="WindowWest1" parent="Barriers" instance=ExtResource("1_barrier")]
@@ -443,7 +455,7 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 8, 0, 9.8)
 
 [node name="DebrisStairs" parent="Doors" instance=ExtResource("2_door")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
-door_cost = 1000
+door_cost = 1250
 door_id = "stairs"
 is_debris = true
 
@@ -453,25 +465,31 @@ door_cost = 750
 door_id = "back_room"
 is_debris = true
 
+[node name="DebrisEastWing" parent="Doors" instance=ExtResource("2_door")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 4, 0, 0)
+door_cost = 1000
+door_id = "east_wing"
+is_debris = true
+
 [node name="Interactables" type="Node3D" parent="."]
 
 [node name="WallWeaponM14" type="Node3D" parent="Interactables"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.5, 1.5, 0)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.5, 1.5, -4)
 
 [node name="WallWeaponOlympia" type="Node3D" parent="Interactables"]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.5, 1.5, -6)
 
 [node name="MysteryBox" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
 
 [node name="PowerSwitch" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 4)
 
 [node name="PerkJuggernog" type="Node3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4.2, 0)
 
 [node name="PerkSpeedCola" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 2)
 
 [node name="PerkDoubleTap" type="Node3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, -2)
@@ -480,7 +498,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, -2)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, 2)
 
 [node name="ShopMachine" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4.2, -4)
 
 [node name="PackAPunch" type="Node3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4.2, 0)
+
+[node name="WallWeaponMP5" type="Node3D" parent="Interactables"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.5, 1.5, 4)
+
+[node name="PerkStaminUp" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 6)
+
+[node name="WallWeaponAK47" type="Node3D" parent="Interactables"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.5, 1.5, -2)
+
+[node name="WallWeaponStakeout" type="Node3D" parent="Interactables"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.5, 1.5, 4)
+
+[node name="PerkPHDFlopper" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -6)

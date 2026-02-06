@@ -40,8 +40,8 @@ var simple_zombie_scene: PackedScene = preload("res://scenes/enemies/billboard_z
 var enemy_configs: Dictionary = {
 	"walker": {
 		"display_name": "Walker",
-		"base_health": 20,  # Reduced from 50
-		"base_damage": 15,
+		"base_health": 100,
+		"base_damage": 20,
 		"base_speed": 2.5,
 		"attack_rate": 1.0,
 		"point_value": 10,
@@ -50,8 +50,8 @@ var enemy_configs: Dictionary = {
 	},
 	"runner": {
 		"display_name": "Runner",
-		"base_health": 15,  # Reduced from 40
-		"base_damage": 20,
+		"base_health": 80,
+		"base_damage": 25,
 		"base_speed": 4.0,
 		"attack_rate": 0.8,
 		"point_value": 20,
@@ -60,8 +60,8 @@ var enemy_configs: Dictionary = {
 	},
 	"brute": {
 		"display_name": "Brute",
-		"base_health": 50,  # Reduced from 120
-		"base_damage": 30,
+		"base_health": 300,
+		"base_damage": 35,
 		"base_speed": 2.2,
 		"attack_rate": 1.5,
 		"point_value": 50,
@@ -70,8 +70,8 @@ var enemy_configs: Dictionary = {
 	},
 	"leaper": {
 		"display_name": "Leaper",
-		"base_health": 25,  # Reduced from 60
-		"base_damage": 25,
+		"base_health": 120,
+		"base_damage": 30,
 		"base_speed": 3.5,
 		"attack_rate": 1.2,
 		"point_value": 40,
@@ -82,8 +82,8 @@ var enemy_configs: Dictionary = {
 	},
 	"tank": {
 		"display_name": "Tank",
-		"base_health": 150,  # Reduced from 500
-		"base_damage": 50,
+		"base_health": 1500,
+		"base_damage": 60,
 		"base_speed": 1.8,
 		"attack_rate": 2.0,
 		"point_value": 200,
@@ -162,13 +162,6 @@ func start_wave(wave_number: int) -> void:
 
 	wave_started.emit(wave_number)
 
-	# Announce special rounds
-	if GameManager.is_boss_round():
-		print("=== BOSS ROUND %d === Tank incoming with %d zombies!" % [wave_number, zombies_to_spawn])
-	elif GameManager.is_horde_surge_round():
-		print("=== HORDE SURGE %d === %d zombies incoming fast!" % [wave_number, zombies_to_spawn])
-	else:
-		print("Wave %d: %d zombies" % [wave_number, zombies_to_spawn])
 
 
 func _get_spawn_delay_for_wave(wave: int) -> float:
@@ -214,7 +207,7 @@ func _spawn_zombie() -> void:
 	var enemy_type := _get_enemy_type_for_spawn()
 
 	# Get spawn position from regular spawn points (outside the playable area)
-	var spawn_pos: Vector3 = spawn_positions[randi() % spawn_positions.size()]
+	var spawn_pos: Vector3 = spawn_positions[randi_range(0, spawn_positions.size() - 1)]
 
 	# Spawn on all clients
 	rpc("_spawn_enemy_at", enemy_type, spawn_pos)
@@ -388,7 +381,6 @@ func register_barrier_spawn_points(barriers_node: Node) -> void:
 				"barrier": barrier
 			})
 
-	print("Registered %d barrier spawn points" % barrier_spawn_points.size())
 
 
 func kill_all_zombies() -> void:

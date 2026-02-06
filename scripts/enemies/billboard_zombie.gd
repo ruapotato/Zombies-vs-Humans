@@ -269,11 +269,6 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 
 	var final_damage := amount
 
-	if is_headshot:
-		final_damage = max_health
-	else:
-		final_damage = _calculate_distance_based_damage(amount, hit_position)
-
 	health -= final_damage
 
 	last_hit_was_headshot = is_headshot
@@ -295,20 +290,6 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 
 	if health <= 0:
 		die()
-
-
-func _calculate_distance_based_damage(base_amount: int, hit_position: Vector3) -> int:
-	if hit_position == Vector3.ZERO:
-		return base_amount
-
-	var enemy_head_y := global_position.y + head_position_y
-	var distance_from_head := enemy_head_y - hit_position.y
-	distance_from_head = clampf(distance_from_head, 0.0, enemy_height)
-
-	var normalized_distance := distance_from_head / enemy_height
-	var damage_multiplier := lerpf(0.5, 0.25, normalized_distance)
-
-	return max(int(max_health * damage_multiplier), 1)
 
 
 @rpc("authority", "call_remote", "reliable")

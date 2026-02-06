@@ -362,4 +362,4 @@ static func get_random_mystery_box_weapon() -> String:
 	var weapons := get_mystery_box_weapons()
 	if weapons.is_empty():
 		return "m1911"
-	return weapons[randi() % weapons.size()]
+	return weapons[randi_range(0, weapons.size() - 1)]
