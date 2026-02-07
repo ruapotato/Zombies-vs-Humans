@@ -438,8 +438,8 @@ func _process_sync_batch() -> void:
 		if not is_instance_valid(zombie):
 			continue
 
-		# Call the zombie's sync RPC
-		if zombie.has_method("_sync_state"):
+		# Call the zombie's sync RPC (skip dead/dying zombies - DYING=4, DEAD=5)
+		if zombie.has_method("_sync_state") and int(zombie.state) < 4:
 			zombie.rpc("_sync_state", zombie.global_position, zombie.rotation.y, zombie.velocity, int(zombie.state))
 
 	# Advance batch index

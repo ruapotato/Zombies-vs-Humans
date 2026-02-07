@@ -199,7 +199,9 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 	damaged.emit(final_damage, is_headshot)
 	AudioManager.play_sound_3d("zombie_hurt", global_position, -5.0)
 
-	rpc("_sync_damage", health)
+	# Only server syncs damage to clients
+	if multiplayer.is_server():
+		rpc("_sync_damage", health)
 
 	if health <= 0:
 		die()
@@ -277,7 +279,7 @@ func _on_attack_timer_timeout() -> void:
 
 # Network sync for clients
 func _on_sync_timer_timeout() -> void:
-	if multiplayer.is_server() and not horde_controlled:
+	if multiplayer.is_server() and not horde_controlled and state != EnemyState.DYING and state != EnemyState.DEAD:
 		rpc("_sync_state", global_position, rotation.y, velocity, int(state))
 
 

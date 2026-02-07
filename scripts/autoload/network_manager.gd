@@ -216,6 +216,7 @@ func start_game() -> void:
 
 	# Reset loaded state
 	players_loaded.clear()
+	_all_loaded_sent = false
 	for peer_id: int in connected_players:
 		players_loaded[peer_id] = false
 
@@ -265,7 +266,12 @@ func _on_player_loaded(loaded_peer_id: int) -> void:
 	_check_all_players_loaded()
 
 
+var _all_loaded_sent := false
+
 func _check_all_players_loaded() -> void:
+	if _all_loaded_sent:
+		return
+
 	var all_loaded: bool = true
 	for pid: int in connected_players:
 		if not players_loaded.get(pid, false):
@@ -273,6 +279,7 @@ func _check_all_players_loaded() -> void:
 			break
 
 	if all_loaded:
+		_all_loaded_sent = true
 		_load_timeout_timer = null
 		rpc("_all_players_loaded")
 
@@ -320,6 +327,11 @@ func spawn_player(peer_id: int, spawn_position: Vector3) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _spawn_player_at(peer_id: int, spawn_position: Vector3) -> void:
+	# Prevent duplicate spawns
+	var game_scene: Node = get_tree().current_scene
+	if game_scene and game_scene.has_node("Players/Player_%d" % peer_id):
+		return
+
 	var player_scene: PackedScene = preload("res://scenes/player/player.tscn")
 	var player: CharacterBody3D = player_scene.instantiate()
 
@@ -331,10 +343,11 @@ func _spawn_player_at(peer_id: int, spawn_position: Vector3) -> void:
 		player.set("player_name", connected_players[peer_id].get("name", "Player"))
 		player.set("player_color", connected_players[peer_id].get("color", Color.WHITE))
 
-	var game_scene: Node = get_tree().current_scene
 	if game_scene and game_scene.has_node("Players"):
 		game_scene.get_node("Players").add_child(player)
 		player.global_position = spawn_position
+	else:
+		push_error("[SPAWN] Game scene or Players node not found!")
 
 	GameManager.register_player(peer_id, player)
 

@@ -19,8 +19,8 @@ func _ready() -> void:
 	host_name_input.text = "Host"
 	join_name_input.text = "Player"
 
-	# Handle CLI arguments for automated launch
-	_handle_cli_args()
+	# Handle CLI arguments for automated launch (deferred to avoid scene change during _ready)
+	_handle_cli_args.call_deferred()
 
 
 func _handle_cli_args() -> void:

@@ -8,6 +8,7 @@ extends Control
 @onready var ready_check: CheckBox = $MarginContainer/VBoxContainer/Content/SettingsPanel/VBox/ReadyCheck
 
 var player_ready_states: Dictionary = {}
+var _autostart_waiting := false
 
 
 func _ready() -> void:
@@ -18,6 +19,7 @@ func _ready() -> void:
 
 	_setup_map_list()
 	_update_ui()
+	_check_autostart()
 
 
 func _setup_map_list() -> void:
@@ -42,11 +44,21 @@ func _setup_map_list() -> void:
 	# Only host can change map
 	map_select.disabled = not NetworkManager.is_server()
 
-	# Set initial map to match what's displayed (first item)
+	# Set map dropdown to match server's current map (may have been set via CLI)
 	if NetworkManager.is_server() and map_select.item_count > 0:
-		var initial_map: String = map_select.get_item_metadata(0)
-		NetworkManager.set_server_map(initial_map)
-		print("Initial map set to: ", initial_map)
+		var current_map: String = NetworkManager.server_info.get("map", "")
+		var found := false
+		if not current_map.is_empty():
+			for i in range(map_select.item_count):
+				if map_select.get_item_metadata(i) == current_map:
+					map_select.selected = i
+					found = true
+					break
+		if not found:
+			# No CLI map set, default to first item
+			var initial_map: String = map_select.get_item_metadata(0)
+			NetworkManager.set_server_map(initial_map)
+		print("Map set to: ", NetworkManager.server_info.get("map", "?"))
 
 
 func _update_ui() -> void:
@@ -115,6 +127,13 @@ func _on_player_connected(peer_id: int, player_info: Dictionary) -> void:
 	AudioManager.play_sound_ui("ui_click")
 	_refresh_player_list()
 
+	# Autostart: start once a client joins
+	if _autostart_waiting and NetworkManager.is_server():
+		print("[CLI] Autostart: player joined, starting game in 2s...")
+		_autostart_waiting = false
+		await get_tree().create_timer(2.0).timeout
+		NetworkManager.start_game()
+
 
 func _on_player_disconnected(peer_id: int) -> void:
 	player_ready_states.erase(peer_id)
@@ -171,3 +190,15 @@ func _on_kick_player(peer_id: int) -> void:
 		return
 
 	NetworkManager.kick_player(peer_id)
+
+
+func _check_autostart() -> void:
+	if not NetworkManager.is_server():
+		return
+
+	var args := OS.get_cmdline_user_args()
+	for arg in args:
+		if arg == "--autostart":
+			_autostart_waiting = true
+			print("[CLI] Autostart enabled - waiting for a player to join...")
+			return

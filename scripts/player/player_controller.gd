@@ -584,6 +584,29 @@ func take_damage(amount: int, _attacker: Node = null) -> void:
 	if health <= 0:
 		_go_down()
 
+	# Server syncs damage to authority player (for remote players)
+	if multiplayer.is_server() and get_multiplayer_authority() != 1:
+		rpc_id(get_multiplayer_authority(), "_server_dealt_damage", health, amount)
+
+
+@rpc("any_peer", "reliable")
+func _server_dealt_damage(new_health: int, amount: int) -> void:
+	# Only accept from server
+	if multiplayer.get_remote_sender_id() != 1:
+		return
+	health = new_health
+	time_since_hit = 0.0
+
+	var damage_fraction := float(amount) / float(max_health / HITS_TO_DOWN)
+	damage_intensity = min(1.0, damage_intensity + damage_fraction)
+	damage_intensity_changed.emit(damage_intensity)
+
+	health_changed.emit(health, max_health)
+	AudioManager.play_sound_3d("player_hurt", global_position)
+
+	if health <= 0:
+		_go_down()
+
 
 func _go_down() -> void:
 	is_downed = true
@@ -705,11 +728,27 @@ func add_points(amount: int) -> void:
 	points_changed.emit(points)
 	AudioManager.play_sound_ui("points_gain", -10.0)
 
+	# Server syncs points to authority player (for remote players)
+	if multiplayer.is_server() and get_multiplayer_authority() != 1:
+		rpc_id(get_multiplayer_authority(), "_sync_points", points)
+
+
+@rpc("any_peer", "reliable")
+func _sync_points(new_points: int) -> void:
+	if multiplayer.get_remote_sender_id() != 1:
+		return
+	points = new_points
+	points_changed.emit(points)
+
 
 func spend_points(amount: int) -> bool:
 	if points >= amount:
 		points -= amount
 		points_changed.emit(points)
+
+		# Server syncs points to authority player (for remote players)
+		if multiplayer.is_server() and get_multiplayer_authority() != 1:
+			rpc_id(get_multiplayer_authority(), "_sync_points", points)
 		return true
 	return false
 

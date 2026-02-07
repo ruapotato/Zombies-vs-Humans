@@ -52,7 +52,7 @@ echo ""
 
 # --- Launch server ---
 echo "[*] Starting server..."
-$GODOT --position 0,0 -- --server --port "$PORT" --map "$MAP" --name "Host" \
+$GODOT --position 0,0 -- --server --port "$PORT" --map "$MAP" --name "Host" --autostart \
     > "$LOG_DIR/server.log" 2>&1 &
 SERVER_PID=$!
 echo "    PID: $SERVER_PID -> $LOG_DIR/server.log"

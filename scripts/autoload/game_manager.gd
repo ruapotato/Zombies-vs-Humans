@@ -119,7 +119,9 @@ func start_next_round() -> void:
 
 	round_started.emit(current_round)
 
+	# Sync round to all clients
 	if multiplayer.is_server():
+		rpc("_sync_round_started", current_round, zombies_remaining)
 		_server_start_wave_spawning()
 
 
@@ -149,6 +151,18 @@ func _calculate_zombies_for_round() -> int:
 func _server_start_wave_spawning() -> void:
 	# This will be called by WaveManager
 	pass
+
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_round_started(round_number: int, zombies_count: int) -> void:
+	current_round = round_number
+	zombies_remaining = zombies_count
+	round_started.emit(current_round)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_round_ended(round_number: int) -> void:
+	round_ended.emit(round_number)
 
 
 func on_zombie_killed(zombie: Node, killer_id: int, is_headshot: bool, hit_position: Vector3 = Vector3.ZERO) -> void:
@@ -325,6 +339,9 @@ func is_power_up_active(power_up_type: String) -> bool:
 
 func end_round() -> void:
 	round_ended.emit(current_round)
+
+	if multiplayer.is_server():
+		rpc("_sync_round_ended", current_round)
 
 	# Give all players max ammo between rounds
 	_give_round_end_rewards()

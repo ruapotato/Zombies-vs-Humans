@@ -102,6 +102,7 @@ var current_wave: int = 0
 var zombies_to_spawn: int = 0
 var zombies_spawned: int = 0
 var is_spawning: bool = false
+var _next_zombie_id: int = 0  # Deterministic ID for network-stable node names
 
 var spawn_timer: float = 0.0
 var spawn_delay: float = SPAWN_DELAY_EARLY
@@ -209,15 +210,17 @@ func _spawn_zombie() -> void:
 	# Get spawn position from regular spawn points (outside the playable area)
 	var spawn_pos: Vector3 = spawn_positions[randi_range(0, spawn_positions.size() - 1)]
 
-	# Spawn on all clients
-	rpc("_spawn_enemy_at", enemy_type, spawn_pos)
+	# Spawn on all clients with deterministic ID for node name sync
+	var zombie_id := _next_zombie_id
+	_next_zombie_id += 1
+	rpc("_spawn_enemy_at", enemy_type, spawn_pos, zombie_id)
 
 	zombies_spawned += 1
 	zombies_to_spawn -= 1
 
 
 @rpc("authority", "call_local", "reliable")
-func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
+func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3, zombie_id: int = -1) -> void:
 	var scene: PackedScene
 	if USE_SIMPLE_ZOMBIES:
 		scene = simple_zombie_scene
@@ -239,6 +242,10 @@ func _spawn_enemy_at(enemy_type: String, spawn_pos: Vector3) -> void:
 
 	if config.has("pounce_range"):
 		zombie.set("pounce_range", config["pounce_range"])
+
+	# Set deterministic name for network sync (same path on server + clients)
+	if zombie_id >= 0:
+		zombie.name = "Z_%d" % zombie_id
 
 	# Add to tree first, then set position
 	zombies_container.add_child(zombie)

@@ -241,7 +241,8 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 	damaged.emit(final_damage, is_headshot)
 	AudioManager.play_sound_3d("zombie_hurt", global_position, -5.0)
 
-	rpc("_sync_damage", health)
+	if multiplayer.is_server():
+		rpc("_sync_damage", health)
 
 	if health <= 0:
 		die()

@@ -286,7 +286,8 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 		if is_instance_valid(self) and sprite:
 			sprite.modulate = Color.WHITE  # Will be set by color system
 
-	rpc("_sync_damage", health)
+	if multiplayer.is_server():
+		rpc("_sync_damage", health)
 
 	if health <= 0:
 		die()
