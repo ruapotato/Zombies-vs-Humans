@@ -19,6 +19,60 @@ func _ready() -> void:
 	host_name_input.text = "Host"
 	join_name_input.text = "Player"
 
+	# Handle CLI arguments for automated launch
+	_handle_cli_args()
+
+
+func _handle_cli_args() -> void:
+	var args := OS.get_cmdline_user_args()
+	var arg_dict := {}
+
+	var i := 0
+	while i < args.size():
+		var arg: String = args[i]
+		if arg.begins_with("--"):
+			var key := arg.substr(2)
+			if i + 1 < args.size() and not args[i + 1].begins_with("--"):
+				arg_dict[key] = args[i + 1]
+				i += 2
+			else:
+				arg_dict[key] = ""
+				i += 1
+		else:
+			i += 1
+
+	if arg_dict.is_empty():
+		return
+
+	var port := int(arg_dict.get("port", "7777"))
+	var player_name: String = arg_dict.get("name", "")
+	var map_name: String = arg_dict.get("map", "nacht")
+
+	if "server" in arg_dict or "host" in arg_dict:
+		if player_name.is_empty():
+			player_name = "Host"
+		print("[CLI] Hosting on port %d as '%s' (map: %s)" % [port, player_name, map_name])
+		var error := NetworkManager.host_game(port, player_name)
+		if error == OK:
+			NetworkManager.set_server_map(map_name)
+			if "autostart" in arg_dict:
+				# Skip lobby, start game immediately once someone joins (or solo)
+				print("[CLI] Autostart enabled - going to lobby")
+			get_tree().change_scene_to_file("res://scenes/main/lobby.tscn")
+		else:
+			push_error("[CLI] Failed to host: %s" % error_string(error))
+
+	elif "join" in arg_dict or "client" in arg_dict:
+		var ip: String = arg_dict.get("join", arg_dict.get("client", "127.0.0.1"))
+		if ip.is_empty():
+			ip = "127.0.0.1"
+		if player_name.is_empty():
+			player_name = "Player_%d" % randi_range(1, 999)
+		print("[CLI] Joining %s:%d as '%s'" % [ip, port, player_name])
+		var error := NetworkManager.join_game(ip, port, player_name)
+		if error != OK:
+			push_error("[CLI] Failed to join: %s" % error_string(error))
+
 
 func _on_host_button_pressed() -> void:
 	AudioManager.play_sound_ui("ui_click")
