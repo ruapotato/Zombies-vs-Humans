@@ -197,6 +197,7 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = 0b1101  # World, enemy, interactable
+	query.collide_with_areas = true  # Hit enemy hitbox areas (wider than physics body)
 	query.exclude = [owner_player]
 
 	var result := space_state.intersect_ray(query)
@@ -207,21 +208,31 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 		var collider: Object = result.collider
 
 		# Find the enemy node for damage calculation
+		# Check collider, parent, and grandparent (for Area3D hitboxes nested in enemy)
 		var enemy_node: Node = null
+		var hit_head_area := false
 		if collider.has_method("take_damage"):
 			enemy_node = collider
 		elif collider.get_parent() and collider.get_parent().has_method("take_damage"):
 			enemy_node = collider.get_parent()
+		elif collider.get_parent() and collider.get_parent().get_parent() and collider.get_parent().get_parent().has_method("take_damage"):
+			enemy_node = collider.get_parent().get_parent()
+		# Check if we hit the HeadHitbox area specifically
+		if collider is Area3D and collider.name == "HeadHitbox":
+			hit_head_area = true
 
-		# Check if headshot based on hit height relative to enemy
+		# Check if headshot based on hit height relative to enemy or head hitbox
 		var is_headshot := false
 		if enemy_node:
-			var enemy_pos: Vector3 = enemy_node.global_position
-			var head_height: float = enemy_node.get("head_position_y") if enemy_node.get("head_position_y") else 1.6
-			var head_threshold: float = 0.3  # Hit must be within 0.3 units of head height
-			var hit_height: float = hit_point.y - enemy_pos.y
-			if hit_height >= (head_height - head_threshold):
+			if hit_head_area:
 				is_headshot = true
+			else:
+				var enemy_pos: Vector3 = enemy_node.global_position
+				var head_height: float = enemy_node.get("head_position_y") if enemy_node.get("head_position_y") else 1.6
+				var head_threshold: float = 0.3
+				var hit_height: float = hit_point.y - enemy_pos.y
+				if hit_height >= (head_height - head_threshold):
+					is_headshot = true
 
 		# Calculate final damage - pass hit_point for distance-based damage
 		var final_damage := damage
@@ -231,6 +242,9 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 		# Apply damage with hit position for distance-based calculation
 		if enemy_node:
 			enemy_node.take_damage(final_damage, owner_player, is_headshot, hit_point)
+			print("[HIT] %s dmg=%d headshot=%s collider=%s" % [enemy_node.name, final_damage, is_headshot, collider.name])
+		else:
+			print("[MISS] Hit %s (class=%s)" % [collider.name if collider is Node else "unknown", collider.get_class()])
 
 		# Spawn appropriate hit effect
 		_spawn_hit_effect(hit_point, hit_normal, is_headshot)

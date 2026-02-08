@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://billboard_zombie_fast"]
+[gd_scene load_steps=6 format=3 uid="uid://billboard_zombie_fast"]
 
 [ext_resource type="Script" path="res://scripts/enemies/billboard_zombie.gd" id="1_script"]
 
@@ -9,6 +9,13 @@ height = 1.6
 [sub_resource type="SphereShape3D" id="SphereShape3D_attack"]
 radius = 1.0
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_hitbox"]
+radius = 0.6
+height = 2.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_head"]
+radius = 0.3
+
 [node name="BillboardZombie" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
 collision_mask = 7
@@ -17,6 +24,22 @@ script = ExtResource("1_script")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 shape = SubResource("CapsuleShape3D_col")
+
+[node name="HitboxArea" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+
+[node name="BodyHitbox" type="CollisionShape3D" parent="HitboxArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_hitbox")
+
+[node name="HeadHitbox" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+
+[node name="HeadShape" type="CollisionShape3D" parent="HeadHitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+shape = SubResource("SphereShape3D_head")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
