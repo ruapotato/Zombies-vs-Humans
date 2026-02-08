@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/primitive_zombie.gd" id="1_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
-radius = 0.2
+radius = 0.3
 height = 1.6
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_simple"]
@@ -99,7 +99,7 @@ path_desired_distance = 0.5
 target_desired_distance = 0.8
 path_max_distance = 50.0
 avoidance_enabled = true
-radius = 0.2
+radius = 0.3
 
 [node name="AttackArea" type="Area3D" parent="."]
 collision_layer = 0
