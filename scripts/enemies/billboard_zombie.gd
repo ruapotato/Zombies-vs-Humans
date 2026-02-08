@@ -64,7 +64,7 @@ func _ready() -> void:
 		sprite.texture = ZombieTextureGen.get_zombie_texture(enemy_type)
 		# Tank is bigger
 		if enemy_type == "tank":
-			sprite.pixel_size = 0.018
+			sprite.pixel_size = 0.03
 
 	# Set up attack sprite
 	if attack_sprite:
