@@ -91,7 +91,7 @@ mesh = SubResource("BoxMesh_floor")
 surface_material_override/0 = SubResource("StandardMaterial3D_floor")
 
 [node name="Floor2" type="StaticBody3D" parent="Geometry"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 4, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 collision_layer = 1
 collision_mask = 0
 
@@ -108,7 +108,7 @@ mesh = SubResource("BoxMesh_ceiling")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="Ceiling2" type="MeshInstance3D" parent="Geometry"]
-transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 0.5, 6, 7.65, 0)
+transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 7.65, 0)
 mesh = SubResource("BoxMesh_ceiling")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
@@ -161,7 +161,7 @@ mesh = SubResource("BoxMesh_wall_short")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="WallNorth2" type="StaticBody3D" parent="Geometry"]
-transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5.75, -5)
+transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.75, -5)
 collision_layer = 1
 collision_mask = 0
 
@@ -173,7 +173,7 @@ mesh = SubResource("BoxMesh_wall_long")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="WallSouth2" type="StaticBody3D" parent="Geometry"]
-transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5.75, 5)
+transform = Transform3D(0.5, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.75, 5)
 collision_layer = 1
 collision_mask = 0
 
@@ -185,7 +185,7 @@ mesh = SubResource("BoxMesh_wall_long")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="WallEast2" type="StaticBody3D" parent="Geometry"]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 12, 5.75, 0)
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 6, 5.75, 0)
 collision_layer = 1
 collision_mask = 0
 
@@ -194,6 +194,20 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 0, 0)
 shape = SubResource("BoxShape3D_wall_short")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallEast2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 0, 0)
+mesh = SubResource("BoxMesh_wall_short")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="WallWest2" type="StaticBody3D" parent="Geometry"]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -6, 5.75, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallWest2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 0, 0)
+shape = SubResource("BoxShape3D_wall_short")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallWest2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 0, 0)
 mesh = SubResource("BoxMesh_wall_short")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
@@ -357,7 +371,7 @@ light_energy = 1.5
 omni_range = 8.0
 
 [node name="UpstairsLight" type="OmniLight3D" parent="Lighting"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, 0)
 light_color = Color(0.9, 0.8, 1, 1)
 light_energy = 2.0
 omni_range = 10.0
@@ -492,22 +506,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 4)
 
 [node name="PerkJuggernog" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4.2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 4.2, 0)
 
 [node name="PerkSpeedCola" type="Node3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 2)
 
 [node name="PerkDoubleTap" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 4.2, -2)
 
 [node name="PerkQuickRevive" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 4.2, 2)
 
 [node name="ShopMachine" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 4.2, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 4.2, -4)
 
 [node name="PackAPunch" type="Node3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4.2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.2, 0)
 
 [node name="WallWeaponMP5" type="Node3D" parent="Interactables"]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.5, 1.5, 4)
