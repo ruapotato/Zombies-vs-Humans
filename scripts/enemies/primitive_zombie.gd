@@ -53,6 +53,13 @@ var is_moving: bool = false
 @onready var attack_timer: Timer = $AttackTimer
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
+# Health bar
+var health_bar_sprite: Sprite3D = null
+var health_bar_image: Image = null
+var health_bar_texture: ImageTexture = null
+const HEALTH_BAR_WIDTH := 32
+const HEALTH_BAR_HEIGHT := 4
+
 # LOD meshes
 @onready var detail_parts: Node3D = $Model/DetailParts
 @onready var simple_mesh: MeshInstance3D = $Model/SimpleMesh
@@ -62,6 +69,7 @@ var current_lod: int = 0  # 0 = detailed, 1 = simple
 func _ready() -> void:
 	_scale_stats_for_round()
 	set_meta("point_value", point_value)
+	_create_health_bar()
 
 	state = EnemyState.SPAWNING
 	await get_tree().create_timer(0.3).timeout
@@ -240,6 +248,7 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 
 	damaged.emit(final_damage, is_headshot)
 	AudioManager.play_sound_3d("zombie_hurt", global_position, -5.0)
+	_update_health_bar()
 
 	if multiplayer.is_server():
 		rpc("_sync_damage", health)
@@ -251,6 +260,48 @@ func take_damage(amount: int, attacker: Node = null, is_headshot: bool = false, 
 @rpc("authority", "call_remote", "reliable")
 func _sync_damage(new_health: int) -> void:
 	health = new_health
+	_update_health_bar()
+
+
+func _create_health_bar() -> void:
+	health_bar_sprite = Sprite3D.new()
+	health_bar_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	health_bar_sprite.pixel_size = 0.02
+	health_bar_sprite.position = Vector3(0, enemy_height + 0.15, 0)
+	health_bar_sprite.no_depth_test = true
+	health_bar_sprite.render_priority = 10
+	health_bar_sprite.visible = false
+	add_child(health_bar_sprite)
+
+	health_bar_image = Image.create(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT, false, Image.FORMAT_RGBA8)
+	health_bar_texture = ImageTexture.create_from_image(health_bar_image)
+	health_bar_sprite.texture = health_bar_texture
+
+
+func _update_health_bar() -> void:
+	if not health_bar_sprite or max_health <= 0:
+		return
+
+	var ratio := clampf(float(health) / float(max_health), 0.0, 1.0)
+	var filled := int(ratio * HEALTH_BAR_WIDTH)
+
+	health_bar_image.fill(Color(0, 0, 0, 0.7))
+	for x in range(1, HEALTH_BAR_WIDTH - 1):
+		for y in range(1, HEALTH_BAR_HEIGHT - 1):
+			if x < filled:
+				var bar_color: Color
+				if ratio > 0.5:
+					bar_color = Color(0.1, 0.9, 0.1)
+				elif ratio > 0.25:
+					bar_color = Color(0.9, 0.9, 0.1)
+				else:
+					bar_color = Color(0.9, 0.1, 0.1)
+				health_bar_image.set_pixel(x, y, bar_color)
+			else:
+				health_bar_image.set_pixel(x, y, Color(0.2, 0.0, 0.0, 0.5))
+
+	health_bar_texture.update(health_bar_image)
+	health_bar_sprite.visible = true
 
 
 func die() -> void:
