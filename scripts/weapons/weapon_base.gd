@@ -242,9 +242,6 @@ func _fire_pellet(damage: int, current_spread: float) -> void:
 		# Apply damage with hit position for distance-based calculation
 		if enemy_node:
 			enemy_node.take_damage(final_damage, owner_player, is_headshot, hit_point)
-			print("[HIT] %s dmg=%d headshot=%s collider=%s" % [enemy_node.name, final_damage, is_headshot, collider.name])
-		else:
-			print("[MISS] Hit %s (class=%s)" % [collider.name if collider is Node else "unknown", collider.get_class()])
 
 		# Spawn appropriate hit effect
 		_spawn_hit_effect(hit_point, hit_normal, is_headshot)
