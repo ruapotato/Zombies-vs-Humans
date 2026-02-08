@@ -2,6 +2,8 @@ extends Control
 ## HUD controller - manages all HUD elements
 
 @onready var round_label: Label = $TopLeft/RoundLabel
+@onready var tier_label: Label = $TopLeft/TierLabel
+@onready var tier_progress: ProgressBar = $TopLeft/TierProgress
 @onready var zombies_label: Label = $TopLeft/ZombiesLabel
 @onready var fps_label: Label = $TopLeft/FPSLabel
 @onready var power_up_container: HBoxContainer = $TopRight/PowerUpContainer
@@ -14,14 +16,19 @@ extends Control
 @onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var downed_overlay: ColorRect = $DownedOverlay
 @onready var bleedout_timer_label: Label = $DownedOverlay/BleedoutTimer
-@onready var minimap_container: Control = $Minimap/MapContainer
-@onready var poi_container: Control = $Minimap/MapContainer/POIContainer
-@onready var player_marker: ColorRect = $Minimap/MapContainer/PlayerMarker
+@onready var minimap: Control = $Minimap
+@onready var objective_icon: Label = $ObjectiveTracker/ObjectiveIcon
+@onready var objective_text: Label = $ObjectiveTracker/ObjectiveText
+@onready var achievement_popup: PanelContainer = $AchievementPopup
+@onready var achievement_title: Label = $AchievementPopup/AchievementVBox/AchievementTitle
+@onready var achievement_desc: Label = $AchievementPopup/AchievementVBox/AchievementDesc
 
 var local_player: Node = null
 var active_power_up_icons: Dictionary = {}
-var minimap_scale: float = 4.0  # pixels per world unit
-var poi_markers: Dictionary = {}  # node -> marker
+
+# Achievement popup queue
+var achievement_queue: Array[Dictionary] = []
+var is_showing_achievement: bool = false
 
 # Perk icon colors
 const PERK_COLORS: Dictionary = {
@@ -43,6 +50,13 @@ func _ready() -> void:
 	GameManager.round_ended.connect(_on_round_ended)
 	GameManager.power_up_collected.connect(_on_power_up_collected)
 
+	# Connect to progression signals
+	var pm := get_node_or_null("/root/ProgressionManager")
+	if pm:
+		pm.objective_changed.connect(_on_objective_changed)
+		pm.tier_changed.connect(_on_tier_changed)
+		pm.achievement_unlocked.connect(_on_achievement_unlocked)
+
 	# Find local player when spawned
 	_find_local_player()
 
@@ -62,7 +76,6 @@ func _process(_delta: float) -> void:
 
 	_update_interaction_prompt()
 	_update_downed_state()
-	_update_minimap()
 
 
 func _find_local_player() -> void:
@@ -77,6 +90,9 @@ func _find_local_player() -> void:
 			local_player = player
 			_connect_player_signals()
 			_update_all()
+			# Pass player to minimap
+			if minimap and minimap.has_method("set_local_player"):
+				minimap.set_local_player(local_player)
 			break
 
 
@@ -290,6 +306,18 @@ func _update_interaction_prompt() -> void:
 		interaction_prompt.text = ""
 		return
 
+	# Check for revive prompt first
+	if local_player.has_method("get_nearby_downed_player"):
+		var downed_player: Node = local_player.get_nearby_downed_player()
+		if downed_player:
+			var downed_name: String = downed_player.player_name if downed_player.player_name else "Player"
+			if local_player._reviving_target == downed_player:
+				var progress := int(downed_player.revive_progress / downed_player.REVIVE_TIME * 100)
+				interaction_prompt.text = "Reviving %s... %d%%" % [downed_name, progress]
+			else:
+				interaction_prompt.text = "Hold [F] to Revive %s" % downed_name
+			return
+
 	var interaction_ray: RayCast3D = local_player.get_node_or_null("CameraMount/Camera3D/InteractionRay")
 	if not interaction_ray or not interaction_ray.is_colliding():
 		interaction_prompt.text = ""
@@ -345,100 +373,76 @@ func _show_announcement(text: String, color: Color = Color.WHITE) -> void:
 	tween.tween_callback(func(): announcement_label.visible = false)
 
 
-func _update_minimap() -> void:
-	if not local_player or not minimap_container:
+# --- Progression UI Handlers ---
+
+func _on_objective_changed(text: String, target: Node) -> void:
+	if objective_text:
+		objective_text.text = text
+		# Pulse effect on change
+		if text != "":
+			var tween := create_tween()
+			tween.tween_property(objective_text, "modulate:a", 0.4, 0.1)
+			tween.tween_property(objective_text, "modulate:a", 1.0, 0.3)
+	# Forward target to minimap
+	if minimap and minimap.has_method("set_objective_target"):
+		minimap.set_objective_target(target)
+
+
+func _on_tier_changed(tier_name: String, tier_color: Color) -> void:
+	if tier_label:
+		tier_label.text = tier_name
+		tier_label.add_theme_color_override("font_color", tier_color)
+
+	# Dramatic announcement
+	_show_announcement(tier_name, tier_color)
+
+	# Scale-up animation on round label
+	if round_label:
+		var tween := create_tween()
+		tween.tween_property(round_label, "scale", Vector2(1.3, 1.3), 0.2)
+		tween.tween_property(round_label, "scale", Vector2(1.0, 1.0), 0.3)
+
+	# Update tier progress
+	_update_tier_progress()
+
+
+func _update_tier_progress() -> void:
+	var pm := get_node_or_null("/root/ProgressionManager")
+	if pm and tier_progress:
+		tier_progress.value = pm.get_tier_progress()
+
+
+func _on_achievement_unlocked(achievement_name: String, description: String) -> void:
+	achievement_queue.append({"name": achievement_name, "desc": description})
+	if not is_showing_achievement:
+		_show_next_achievement()
+
+
+func _show_next_achievement() -> void:
+	if achievement_queue.is_empty():
+		is_showing_achievement = false
 		return
 
-	# Update player marker rotation (direction indicator)
-	var player_yaw: float = local_player.rotation.y
-	player_marker.rotation = -player_yaw
+	is_showing_achievement = true
+	var ach: Dictionary = achievement_queue.pop_front()
 
-	# Update POI markers relative to player position
-	var player_pos := Vector2(local_player.global_position.x, local_player.global_position.z)
+	achievement_title.text = ach["name"]
+	achievement_desc.text = ach["desc"]
 
-	# Initialize POI markers if not done
-	if poi_markers.is_empty():
-		_init_minimap_pois()
+	# Slide in from right
+	achievement_popup.visible = true
+	achievement_popup.modulate.a = 0.0
+	var start_offset := achievement_popup.position.x
+	achievement_popup.position.x = start_offset + 300
 
-	# Update POI positions relative to player
-	for node: Node in poi_markers:
-		if is_instance_valid(node):
-			var marker: Control = poi_markers[node]
-			var poi_pos := Vector2(node.global_position.x, node.global_position.z)
-			var offset := (poi_pos - player_pos) * minimap_scale
-			marker.position = offset
-
-
-func _init_minimap_pois() -> void:
-	# Find all interactables and create markers
-	var interactables := get_tree().get_nodes_in_group("interactables")
-
-	for node: Node in interactables:
-		var marker := _create_poi_marker(node)
-		if marker:
-			poi_container.add_child(marker)
-			poi_markers[node] = marker
-
-
-func _create_poi_marker(node: Node) -> Control:
-	var container := Control.new()
-
-	# Marker dot
-	var dot := ColorRect.new()
-	dot.custom_minimum_size = Vector2(6, 6)
-	dot.size = Vector2(6, 6)
-	dot.position = Vector2(-3, -3)
-	container.add_child(dot)
-
-	# Label
-	var label := Label.new()
-	label.add_theme_font_size_override("font_size", 8)
-	label.position = Vector2(5, -6)
-	container.add_child(label)
-
-	# Determine type and color
-	var node_name := node.name.to_lower()
-	var class_name_str := node.get_class()
-
-	if node is PerkMachine or "perk" in node_name:
-		var perk_name_str: String = node.get("perk_name") if node.get("perk_name") else "perk"
-		var perk_color: Color = PERK_COLORS.get(perk_name_str, Color(0.8, 0.3, 0.8))
-		dot.color = perk_color
-		label.text = _get_short_perk_name(perk_name_str)
-		label.modulate = perk_color
-	elif node is ShopMachine or "shop" in node_name:
-		dot.color = Color(0.3, 0.8, 1)
-		label.text = "Shop"
-		label.modulate = Color(0.3, 0.8, 1)
-	elif "mystery" in node_name or "box" in node_name:
-		dot.color = Color(1, 0.8, 0.2)
-		label.text = "Box"
-		label.modulate = Color(1, 0.8, 0.2)
-	elif "power" in node_name:
-		dot.color = Color(1, 1, 0.3)
-		label.text = "Power"
-		label.modulate = Color(1, 1, 0.3)
-	elif "weapon" in node_name or "wall" in node_name:
-		dot.color = Color(0.7, 0.7, 0.7)
-		label.text = "Gun"
-		label.modulate = Color(0.7, 0.7, 0.7)
-	else:
-		dot.color = Color(0.5, 0.5, 0.5)
-		label.text = ""
-
-	return container
-
-
-func _get_short_perk_name(perk_name: String) -> String:
-	var short_names := {
-		"juggernog": "Jug",
-		"speed_cola": "Speed",
-		"double_tap": "DblTap",
-		"quick_revive": "Revive",
-		"stamin_up": "Stam",
-		"phd_flopper": "PhD",
-		"deadshot": "Dead",
-		"mule_kick": "Mule",
-		"spring_heels": "Spring"
-	}
-	return short_names.get(perk_name, perk_name.substr(0, 4))
+	var tween := create_tween()
+	tween.tween_property(achievement_popup, "position:x", start_offset, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(achievement_popup, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(3.0)
+	tween.tween_property(achievement_popup, "position:x", start_offset + 300, 0.3).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(achievement_popup, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(func():
+		achievement_popup.visible = false
+		achievement_popup.position.x = start_offset
+		_show_next_achievement()
+	)

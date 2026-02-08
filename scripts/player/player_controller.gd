@@ -55,11 +55,15 @@ var is_downed := false
 var bleedout_timer := 0.0
 var revive_progress := 0.0
 var reviver: Player = null
+var _reviving_target: Player = null  # The downed player we're reviving
+var _revive_sync_accum := 0.0  # Throttle revive sync RPCs
+const REVIVE_RANGE := 2.5  # Distance to start reviving
 var regen_accumulator := 0.0  # Accumulates fractional health regen
 
 # Damage tracking for CoD-style screen effect
 var damage_intensity := 0.0  # 0-1, how red the screen is
 var time_since_hit := 999.0  # Seconds since last damage
+var _last_damage_time_ms: int = 0  # Engine ticks at last damage (works without physics)
 
 # Points
 var points: int = 500  # Starting points
@@ -100,6 +104,7 @@ var is_moving: bool = false
 const ANIM_IDLE := "m root"  # Lower body idle
 const ANIM_RUN := "m run"  # Lower body run
 const ANIM_JUMP := "m jump"
+const ANIM_DEATH := "m death"  # Death/downed animation
 const ANIM_GUN_HOLD := "gun_hold_arms"  # Upper body arms
 
 
@@ -119,7 +124,8 @@ func _ready() -> void:
 		_setup_first_person_model()
 	else:
 		camera.current = false
-		set_physics_process(false)
+		if not multiplayer.is_server():
+			set_physics_process(false)
 
 	# Give starting weapon
 	_give_starting_weapon()
@@ -237,6 +243,11 @@ func _set_upper_animation(anim_name: String) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Server processes downed state for ALL players (revive ticking, bleedout)
+	if multiplayer.is_server() and not is_multiplayer_authority() and is_downed:
+		_process_downed(delta)
+		return
+
 	if not is_multiplayer_authority():
 		return
 
@@ -438,6 +449,9 @@ func _sync_weapon_switch(index: int) -> void:
 
 
 func _handle_interaction() -> void:
+	# Check for downed players to revive (hold F)
+	_handle_revive()
+
 	if not interaction_ray.is_colliding():
 		return
 
@@ -467,6 +481,65 @@ func _handle_interaction() -> void:
 		# Normal interactables trigger on press
 		if Input.is_action_just_pressed("interact"):
 			interactable.interact(self)
+
+
+func _handle_revive() -> void:
+	# Find nearest downed player within range
+	var nearest_downed: Player = null
+	var nearest_dist := REVIVE_RANGE
+
+	var players_node := get_tree().current_scene.get_node_or_null("Players")
+	if not players_node:
+		return
+
+	for player in players_node.get_children():
+		if player == self:
+			continue
+		if not is_instance_valid(player):
+			continue
+		if not player.is_downed:
+			continue
+		var dist := global_position.distance_to(player.global_position)
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest_downed = player
+
+	if nearest_downed and Input.is_action_pressed("interact"):
+		# Start or continue reviving
+		if _reviving_target != nearest_downed:
+			# New target - stop old revive
+			if _reviving_target:
+				_reviving_target.rpc_id(1, "_rpc_stop_revive")
+			_reviving_target = nearest_downed
+			# Tell the server (authority) to start reviving this player
+			nearest_downed.rpc_id(1, "_rpc_start_revive", multiplayer.get_unique_id())
+	else:
+		# Stop reviving
+		if _reviving_target:
+			_reviving_target.rpc_id(1, "_rpc_stop_revive")
+			_reviving_target = null
+
+
+func get_nearby_downed_player() -> Player:
+	## Returns the nearest downed player within revive range, or null
+	var players_node := get_tree().current_scene.get_node_or_null("Players")
+	if not players_node:
+		return null
+
+	var nearest: Player = null
+	var nearest_dist := REVIVE_RANGE
+
+	for player in players_node.get_children():
+		if player == self or not is_instance_valid(player):
+			continue
+		if not player.is_downed:
+			continue
+		var dist := global_position.distance_to(player.global_position)
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest = player
+
+	return nearest
 
 
 func get_current_weapon() -> Node:
@@ -565,9 +638,11 @@ func take_damage(amount: int, _attacker: Node = null) -> void:
 	if is_downed:
 		return
 
-	# Invincibility frames - ignore damage if hit too recently
-	if time_since_hit < DAMAGE_COOLDOWN:
+	# Invincibility frames - use engine ticks (works even when physics_process is disabled)
+	var now_ms := Time.get_ticks_msec()
+	if (now_ms - _last_damage_time_ms) < int(DAMAGE_COOLDOWN * 1000):
 		return
+	_last_damage_time_ms = now_ms
 
 	health -= amount
 	time_since_hit = 0.0
@@ -614,6 +689,21 @@ func _go_down() -> void:
 	bleedout_timer = BLEEDOUT_TIME
 	revive_progress = 0.0
 
+	# Play death animation on mesh (visible to all players)
+	if anim_player and anim_player.has_animation(ANIM_DEATH):
+		anim_player.play(ANIM_DEATH)
+	# Disable upper body blend so death anim plays fully
+	if anim_tree:
+		anim_tree.set("parameters/Blend/blend_amount", 0.0)
+
+	# Downed animation - drop camera and hide weapon (authority only)
+	if is_multiplayer_authority():
+		var tween := create_tween()
+		tween.tween_property(camera_mount, "position:y", 0.3, 0.4).set_ease(Tween.EASE_IN)
+		var weapon := get_current_weapon()
+		if weapon:
+			weapon.visible = false
+
 	# Broadcast downed state to all peers immediately
 	rpc("_sync_downed_state", true)
 
@@ -637,12 +727,22 @@ func _go_down() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _sync_downed_state(downed: bool) -> void:
+func _sync_downed_state(downed_state: bool) -> void:
 	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
 		return
-	is_downed = downed
-	if downed:
+	is_downed = downed_state
+	if downed_state:
 		health = 0
+		# Play death animation on remote copy
+		if anim_player and anim_player.has_animation(ANIM_DEATH):
+			anim_player.play(ANIM_DEATH)
+		if anim_tree:
+			anim_tree.set("parameters/Blend/blend_amount", 0.0)
+	else:
+		# Restore animation on revive
+		if anim_tree:
+			anim_tree.set("parameters/Blend/blend_amount", 1.0)
+		_set_lower_animation(ANIM_IDLE)
 	health_changed.emit(health, max_health)
 
 
@@ -672,12 +772,31 @@ func _process_downed(delta: float) -> void:
 
 		revive_progress += delta * revive_speed
 
+		# Sync revive progress to all peers (~5 times/sec)
+		_revive_sync_accum += delta
+		if multiplayer.is_server() and _revive_sync_accum >= 0.2:
+			_revive_sync_accum = 0.0
+			rpc("_sync_revive_progress", revive_progress, bleedout_timer)
+
 		if revive_progress >= REVIVE_TIME:
 			_revive()
 			if reviver:
 				reviver.add_points(100)
 				if reviver.player_id in GameManager.player_stats:
 					GameManager.player_stats[reviver.player_id]["revives"] += 1
+	else:
+		_revive_sync_accum += delta
+		if multiplayer.is_server() and _revive_sync_accum >= 1.0:
+			_revive_sync_accum = 0.0
+			rpc("_sync_revive_progress", 0.0, bleedout_timer)
+
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _sync_revive_progress(progress: float, bleedout: float) -> void:
+	if multiplayer.get_remote_sender_id() != 1:
+		return
+	revive_progress = progress
+	bleedout_timer = bleedout
 
 
 func start_revive(reviving_player: Player) -> void:
@@ -691,11 +810,48 @@ func stop_revive() -> void:
 	revive_progress = 0.0
 
 
+@rpc("any_peer", "reliable")
+func _rpc_start_revive(reviver_peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	# Find the reviver player node
+	var players_node := get_tree().current_scene.get_node_or_null("Players")
+	if not players_node:
+		return
+	var reviver_node: Player = null
+	for player in players_node.get_children():
+		if player.player_id == reviver_peer_id:
+			reviver_node = player
+			break
+	if reviver_node and is_downed:
+		start_revive(reviver_node)
+
+
+@rpc("any_peer", "reliable")
+func _rpc_stop_revive() -> void:
+	if not multiplayer.is_server():
+		return
+	stop_revive()
+
+
 func _revive() -> void:
 	is_downed = false
 	health = max_health / 2
 	revive_progress = 0.0
 	reviver = null
+
+	# Restore animation state - re-enable upper body blend and play idle
+	if anim_tree:
+		anim_tree.set("parameters/Blend/blend_amount", 1.0)
+	_set_lower_animation(ANIM_IDLE)
+
+	# Stand-up animation - raise camera and show weapon (authority only)
+	if is_multiplayer_authority():
+		var tween := create_tween()
+		tween.tween_property(camera_mount, "position:y", 1.5, 0.4).set_ease(Tween.EASE_OUT)
+		var weapon := get_current_weapon()
+		if weapon:
+			weapon.visible = true
 
 	health_changed.emit(health, max_health)
 	revived.emit()
