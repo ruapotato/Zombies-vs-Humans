@@ -22,6 +22,7 @@ GameManager="*res://scripts/autoload/game_manager.gd"
 NetworkManager="*res://scripts/autoload/network_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 MapManager="*res://scripts/autoload/map_manager.gd"
+ProgressionManager="*res://scripts/autoload/progression_manager.gd"
 
 [display]
 
